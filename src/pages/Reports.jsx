@@ -1,143 +1,231 @@
-import React, { useState, useEffect } from 'react';
-import { courseService } from '../services/courseService';
-import { studentService } from '../services/studentService';
+import React, { useState, useMemo } from 'react';
+import Sidebar from '../components/layout/Sidebar';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+} from 'recharts';
 
-export const Reports = () => {
-    const [loading, setLoading] = useState(true);
-    const [aiAnalysis, setAiAnalysis] = useState(null);
-    const [stats, setStats] = useState({
-        coursesCount: 0,
-        studentsCount: 0,
-        uniqueStudents: 0,
-        certificatesCount: 0
-    });
+const Reports = ({ onNavigate, toggleDarkMode, courses = [], students = [] }) => {
+    // Mock Data for Charts (Keep existing mock data)
+    const [timeRange, setTimeRange] = useState('monthly');
 
-    useEffect(() => {
-        const loadStats = async () => {
-            try {
-                const [courses, students] = await Promise.all([
-                    courseService.getCourses(),
-                    studentService.getStudents()
-                ]);
+    const totalParticipants = students ? students.length : 0;
 
-                const uniqueDnis = new Set(students.map(s => s.dni).filter(Boolean));
-                const certified = students.filter(s => s.attended === true).length;
+    // Calculate total hours from sessions
+    const totalHours = useMemo(() => {
+        if (!courses) return 0;
+        return courses.reduce((acc, course) => {
+            if (!course.sessions || course.sessions.length === 0) return acc;
+            const courseHours = course.sessions.reduce((sAcc, session) => {
+                if (!session.startTime || !session.endTime) return sAcc;
+                const [startH, startM] = session.startTime.split(':').map(Number);
+                const [endH, endM] = session.endTime.split(':').map(Number);
+                const duration = (endH + (endM || 0) / 60) - (startH + (startM || 0) / 60);
+                return sAcc + (duration > 0 ? duration : 0);
+            }, 0);
+            return acc + courseHours;
+        }, 0);
+    }, [courses]);
 
-                setStats({
-                    coursesCount: courses.length,
-                    studentsCount: students.length,
-                    uniqueStudents: uniqueDnis.size || students.length,
-                    certificatesCount: certified
-                });
+    // Group students by month for Enrollment Chart
+    const enrollmentData = useMemo(() => {
+        if (!students) return [];
+        const months = ['Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'];
+        const data = new Array(12).fill(0).map((_, i) => ({ name: months[i], participants: 0 }));
 
-                setAiAnalysis({
-                    summary: `L'activitat formativa registra ${courses.length} cursos i ${certified} certificats a ${uniqueDnis.size || students.length} alumnes únics. La demanda en 'Dret Laboral' es manté crítica.`,
-                    tip: "Recomanació IA: Incrementar oferta de 'Prevenció' un 15% per cobrir el risc d'abandonament."
-                });
-            } catch (error) {
-                console.error("Error loading stats:", error);
-            } finally {
-                setLoading(false);
+        students.forEach(student => {
+            let date = new Date();
+            if (student.registeredAt && student.registeredAt.seconds) {
+                date = new Date(student.registeredAt.seconds * 1000);
+            } else if (student.registeredAt) {
+                date = new Date(student.registeredAt);
             }
-        };
-        loadStats();
-    }, []);
+            const month = date.getMonth();
+            data[month].participants += 1;
+        });
+
+        // Filter to showing reasonable range or all? Showing all 12 months for now or just relevant
+        // Let's rotate to start from current month - 5? simpler to just show Jan-Dec or active months
+        // For simplicity, just show Jan-Jun as in mock or full year if needed. 
+        // Let's return sliced data for current visualization if needed, or full 12.
+        // Mock showed 6 months. Let's return standard view.
+        return data.filter(d => d.participants > 0 || d.name === months[new Date().getMonth()]);
+    }, [students]);
+
+    // Course Type Distribution
+    const courseTypeData = useMemo(() => {
+        if (!courses) return [];
+        const counts = courses.reduce((acc, course) => {
+            const cat = course.category || 'Altres';
+            acc[cat] = (acc[cat] || 0) + 1;
+            return acc;
+        }, {});
+
+        const colors = ['#E30613', '#FF7F50', '#FFA07A', '#8884d8', '#82ca9d'];
+        return Object.keys(counts).map((key, index) => ({
+            name: key,
+            value: counts[key],
+            color: colors[index % colors.length]
+        }));
+    }, [courses]);
+
+    const satisfactionDistributionData = [
+        { category: 'Excel·lent (5)', count: Math.round(totalParticipants * 0.4) },
+        { category: 'Notable (4)', count: Math.round(totalParticipants * 0.3) },
+        { category: 'Bé (3)', count: Math.round(totalParticipants * 0.2) },
+        { category: 'Suficient (2)', count: Math.round(totalParticipants * 0.08) },
+        { category: 'Insuficient (1)', count: Math.round(totalParticipants * 0.02) },
+    ];
 
     return (
-        <div className="animate-slide-up">
-            <header className="flex justify-between items-center mb-8">
-                <div>
-                    <nav aria-label="Breadcrumb" className="flex text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
-                        <ol className="inline-flex items-center space-x-2" style={{ listStyle: 'none' }}>
-                            <li>Admin</li>
-                            <li><span className="mx-1">/</span></li>
-                            <li className="text-slate-600 dark:text-slate-300">Informes</li>
-                        </ol>
-                    </nav>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Analítica i Rendiment</h2>
-                </div>
-                <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors bg-white dark:bg-slate-800">
-                        <span className="material-icons-outlined text-lg">calendar_today</span>
-                        Aquest Trimestre
-                    </button>
-                    <button className="btn-premium flex items-center gap-2">
-                        <span className="material-icons-outlined text-lg">file_download</span>
-                        EXPORTAR ANÀLISI
-                    </button>
-                </div>
-            </header>
+        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+            <Sidebar currentView="reports" onNavigate={onNavigate} toggleDarkMode={toggleDarkMode} />
 
+            <main className="lg:ml-64 p-6 lg:p-10">
+                <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Informes i Analítica</h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">Visualització de dades claus de la formació</p>
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-card-dark p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <button
+                            onClick={() => setTimeRange('weekly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'weekly' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Setmanal
+                        </button>
+                        <button
+                            onClick={() => setTimeRange('monthly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'monthly' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Mensual
+                        </button>
+                        <button
+                            onClick={() => setTimeRange('yearly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'yearly' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Anual
+                        </button>
+                    </div>
+                </header>
 
-
-            {/* Stats Grid (Referència Dashboard) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {[
-                    { label: 'Cursos Actius', value: stats.coursesCount, icon: 'play_lesson', color: 'text-primary', bg: 'bg-red-50 dark:bg-red-900/20' },
-                    { label: 'Certificats Emesos', value: stats.certificatesCount, icon: 'verified', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
-                    { label: 'Alumnes Únics', value: stats.uniqueStudents, icon: 'groups', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                    { label: 'Satisfacció', value: '4.8/5', icon: 'stars', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' }
-                ].map((stat, i) => (
-                    <div key={i} className="card p-6 flex flex-col transition-all hover:shadow-md">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-lg flex items-center justify-center`}>
-                                <span className="material-icons-outlined">{stat.icon}</span>
-                            </div>
-                            <span className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">+4%</span>
+                {/* KPI Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Total Participants</h3>
+                        <div className="flex items-end justify-between">
+                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{totalParticipants}</span>
+                            <span className="flex items-center text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                                <span className="material-icons-outlined text-[14px] mr-1">trending_up</span> +12%
+                            </span>
                         </div>
-                        <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-tight">{stat.label}</h3>
-                        <p className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{stat.value}</p>
                     </div>
-                ))}
-            </div>
-
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="card p-6">
-                    <h3 className="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                        <span className="material-icons-outlined text-primary">pie_chart</span>
-                        Distribució de Demanda
-                    </h3>
-                    <div className="space-y-5">
-                        {[
-                            { name: 'Dret Laboral', value: 45, color: 'bg-primary' },
-                            { name: 'Salut i Prevenció', value: 30, color: 'bg-blue-600' },
-                            { name: 'Habilitats Sindicals', value: 15, color: 'bg-amber-600' },
-                            { name: 'Altres', value: 10, color: 'bg-slate-400' }
-                        ].map((cat, i) => (
-                            <div key={i}>
-                                <div className="flex justify-between mb-1.5">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{cat.name}</span>
-                                    <span className="text-xs font-black text-slate-800 dark:text-white">{cat.value}%</span>
-                                </div>
-                                <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div className={`${cat.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${cat.value}%` }}></div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Hores Impartides</h3>
+                        <div className="flex items-end justify-between">
+                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{Math.round(totalHours)}h</span>
+                            <span className="flex items-center text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                                <span className="material-icons-outlined text-[14px] mr-1">trending_up</span> +8%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Cost per Alumne</h3>
+                        <div className="flex items-end justify-between">
+                            <span className="text-3xl font-bold text-slate-800 dark:text-white">42€</span>
+                            <span className="flex items-center text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                                <span className="material-icons-outlined text-[14px] mr-1">trending_down</span> -2%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Taxa de Finalització</h3>
+                        <div className="flex items-end justify-between">
+                            <span className="text-3xl font-bold text-slate-800 dark:text-white">94%</span>
+                            <span className="flex items-center text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                                <span className="material-icons-outlined text-[14px] mr-1">remove</span> 0%
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="card p-6">
-                    <h3 className="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                        <span className="material-icons-outlined text-blue-600">bar_chart</span>
-                        Evolució d'Inscripcions
-                    </h3>
-                    <div className="h-48 flex items-end justify-between gap-2 px-2">
-                        {[30, 50, 40, 75, 45, 85, 65].map((h, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                                <div className="relative w-full">
-                                    <div className={`w-full rounded-t-md transition-all duration-500 group-hover:opacity-80 ${i === 5 ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`} style={{ height: `${h}%`, minHeight: '8px' }}></div>
-                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {Math.round(h * 1.5)}
-                                    </div>
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">M{i + 1}</span>
-                            </div>
-                        ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    {/* Enrollment Chart */}
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Evolució d'Inscripcions</h3>
+                        <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={enrollmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorParticipants" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#E30613" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#E30613" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
+                                        itemStyle={{ color: '#f8fafc' }}
+                                        formatter={(value) => [`${value} Participants`, 'Inscripcions']}
+                                    />
+                                    <Area type="monotone" dataKey="participants" stroke="#E30613" strokeWidth={3} fillOpacity={1} fill="url(#colorParticipants)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Course Type Distribution */}
+                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Tipologia de Cursos</h3>
+                        <div className="h-80 w-full flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={courseTypeData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={80}
+                                        outerRadius={110}
+                                        fill="#8884d8"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                        {courseTypeData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }} />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Satisfacció de l'Alumnat</h3>
+                    <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={satisfactionDistributionData}
+                                layout="vertical"
+                                margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                                <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={100} />
+                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }} />
+                                <Bar dataKey="count" fill="#E30613" radius={[0, 4, 4, 0]} barSize={30} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 };
+
+export default Reports;

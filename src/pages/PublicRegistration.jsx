@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Calendar, MapPin, CheckCircle, ArrowRight, ShieldCheck, Star, Lock, Users, Target } from 'lucide-react';
 
-export const PublicRegistration = () => {
+const PublicRegistration = () => {
     const { courseId } = useParams();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -53,15 +53,24 @@ export const PublicRegistration = () => {
         setRegistrationStatus('submitting');
 
         const formData = new FormData(e.target);
+        const isFull = course.students >= course.maxCapacity && course.enrollmentType === 'limited';
+        const status = isFull && course.enableWaitlist ? "Llista d'espera" : "Pendent";
+
         const studentData = {
-            fullName: formData.get('fullName'),
+            firstName: formData.get('firstName'),
+            surname1: formData.get('surname1'),
+            surname2: formData.get('surname2'),
+            fullName: `${formData.get('firstName')} ${formData.get('surname1')} ${formData.get('surname2') || ''}`.trim(),
             email: formData.get('email'),
+            dni: formData.get('dni'),
             phone: formData.get('phone'),
             company: formData.get('company'),
+            federation: formData.get('federation'),
+            affiliate: formData.get('affiliate'),
             courseId: course.id,
             courseTitle: course.title,
             registrationDate: new Date().toISOString(),
-            status: 'Pendent'
+            status: status
         };
 
         try {
@@ -202,7 +211,15 @@ export const PublicRegistration = () => {
                             <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-50">
                                 <div>
                                     <h2 className="text-2xl font-black text-slate-900">Inscripció Digital</h2>
-                                    <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Places limitades per curs</p>
+                                    {course.students >= course.maxCapacity && course.enrollmentType === 'limited' ? (
+                                        course.enableWaitlist ? (
+                                            <p className="text-xs font-bold text-amber-500 mt-1 uppercase tracking-widest">Places esgotades - Llista d'espera activa</p>
+                                        ) : (
+                                            <p className="text-xs font-bold text-red-500 mt-1 uppercase tracking-widest">Places esgotades</p>
+                                        )
+                                    ) : (
+                                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Places limitades per curs</p>
+                                    )}
                                 </div>
                                 <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center">
                                     <ShieldCheck size={24} />
@@ -210,14 +227,54 @@ export const PublicRegistration = () => {
                             </div>
 
                             <form onSubmit={handleRegister} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nom Complet</label>
-                                        <input required name="fullName" type="text" placeholder="Joan Garcia" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nom</label>
+                                        <input required name="firstName" type="text" placeholder="Joan" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Empresa / Àrea</label>
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Primer Cognom</label>
+                                        <input required name="surname1" type="text" placeholder="Garcia" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Segon Cognom</label>
+                                        <input name="surname2" type="text" placeholder="Pérez" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">DNI / NIE</label>
+                                        <input required name="dni" type="text" placeholder="12345678X" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Empresa / Centre</label>
                                         <input required name="company" type="text" placeholder="Sector Metal" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Federació</label>
+                                        <select required name="federation" className="w-full bg-slate-50 border-slate-100 rounded-2xl focus:bg-white px-5 py-4 outline-none appearance-none">
+                                            <option value="">Selecciona federació...</option>
+                                            <option value="Serveis Públics">Serveis Públics</option>
+                                            <option value="Indústria">Indústria</option>
+                                            <option value="Serveis">Serveis</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Afiliat/da</label>
+                                        <div className="flex gap-4 pt-3">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="affiliate" value="yes" className="text-ugt-red focus:ring-ugt-red" required />
+                                                <span className="text-sm text-slate-600">Sí</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="affiliate" value="no" className="text-ugt-red focus:ring-ugt-red" required />
+                                                <span className="text-sm text-slate-600">No</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -236,12 +293,24 @@ export const PublicRegistration = () => {
                                         <input type="checkbox" required className="w-4 h-4 rounded border-slate-300 text-ugt-red focus:ring-ugt-red cursor-pointer" />
                                     </div>
                                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                                        Entenc i accepto les <span className="text-slate-900 font-bold underline cursor-pointer">condicions del servei</span> i el tractament de dades per part de la UGT Catalunya.
+                                        Entenc i accepto le <span className="text-slate-900 font-bold underline cursor-pointer">condicions del servei</span> i el tractament de dades per part de la UGT Catalunya.
                                     </p>
                                 </div>
 
-                                <Button type="submit" size="lg" className="w-full grad-ugt py-5 text-xl font-black shadow-red ring-8 ring-red-50 hover:scale-[1.02]" disabled={registrationStatus === 'submitting'}>
-                                    {registrationStatus === 'submitting' ? 'Tramitant...' : 'Registrar-me ARA'}
+                                <Button
+                                    type="submit"
+                                    size="lg"
+                                    className={`w-full py-5 text-xl font-black shadow-red ring-8 ring-red-50 hover:scale-[1.02] ${course.students >= course.maxCapacity && course.enrollmentType === 'limited' && !course.enableWaitlist
+                                        ? 'bg-slate-300 cursor-not-allowed'
+                                        : 'grad-ugt'
+                                        }`}
+                                    disabled={registrationStatus === 'submitting' || (course.students >= course.maxCapacity && course.enrollmentType === 'limited' && !course.enableWaitlist)}
+                                >
+                                    {registrationStatus === 'submitting' ? 'Tramitant...' : (
+                                        course.students >= course.maxCapacity && course.enrollmentType === 'limited' && course.enableWaitlist
+                                            ? "Apuntar-se a Llista d'Espera"
+                                            : 'Registrar-me ARA'
+                                    )}
                                     <ArrowRight size={22} strokeWidth={3} className="ml-2" />
                                 </Button>
                             </form>
@@ -285,3 +354,5 @@ export const PublicRegistration = () => {
         </div>
     );
 };
+
+export default PublicRegistration;

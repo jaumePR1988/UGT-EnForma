@@ -1,90 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import React from 'react';
 
-export const Sidebar = () => {
-    // Dark mode logic matching the reference's script behavior
-    const toggleDarkMode = () => {
-        document.documentElement.classList.toggle('dark');
-    };
+const Sidebar = ({ currentView, onNavigate, toggleDarkMode }) => {
+    const navItems = [
+        { id: 'dashboard', label: 'Tauler de Control', icon: 'dashboard' },
+        { id: 'active-courses', label: 'Cursos Actius', icon: 'school' },
+        { id: 'students', label: 'Alumnat', icon: 'people' },
+        { id: 'certificates', label: 'Certificats', icon: 'assignment' },
+        { id: 'reports', label: 'Informes', icon: 'analytics' },
+        { id: 'calendar', label: 'Calendari', icon: 'calendar_month' }, // New
+        { id: 'settings', label: 'Ajustes', icon: 'settings' },   // New
+    ];
 
     return (
-        <aside className="fixed inset-y-0 left-0 w-64 bg-card-light dark:bg-card-dark border-r border-slate-200 dark:border-slate-800 z-30 hidden lg:flex flex-col">
-            <div className="p-6 flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">U</div>
-                <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white">UGT <span className="text-primary">Formació</span></span>
+        <aside className="fixed inset-y-0 left-0 w-64 bg-[#E30613] text-white border-r border-[#E30613] z-50 hidden lg:flex flex-col shadow-xl">
+            {/* Header */}
+            <div className="p-6 flex items-center gap-3 border-b border-red-700/50">
+                <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center p-1">
+                    <img src="/logo-ugt.png" alt="UGT" className="w-full h-full object-contain" />
+                </div>
+                <span className="font-bold text-lg tracking-tight text-white">UGT <span className="opacity-80 font-normal">Formació</span></span>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1 mt-4">
-                <NavLink
-                    to="/"
-                    className={({ isActive }) =>
-                        isActive
-                            ? "flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium"
-                            : "flex items-center px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    }
-                >
-                    <span className="material-icons-outlined mr-3">dashboard</span>
-                    Tauler de Control
-                </NavLink>
-
-                <NavLink
-                    to="/courses"
-                    className={({ isActive }) =>
-                        isActive
-                            ? "flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium"
-                            : "flex items-center px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    }
-                >
-                    <span className="material-icons-outlined mr-3">school</span>
-                    Cursos Actius
-                </NavLink>
-
-                <NavLink
-                    to="/students"
-                    className={({ isActive }) =>
-                        isActive
-                            ? "flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium"
-                            : "flex items-center px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    }
-                >
-                    <span className="material-icons-outlined mr-3">people</span>
-                    Alumnat
-                </NavLink>
-
-                <NavLink
-                    to="/attendance"
-                    className={({ isActive }) =>
-                        isActive
-                            ? "flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium"
-                            : "flex items-center px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    }
-                >
-                    <span className="material-icons-outlined mr-3">assignment</span>
-                    Certificats
-                </NavLink>
-
-                <NavLink
-                    to="/reports"
-                    className={({ isActive }) =>
-                        isActive
-                            ? "flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium"
-                            : "flex items-center px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    }
-                >
-                    <span className="material-icons-outlined mr-3">analytics</span>
-                    Informes
-                </NavLink>
+            {/* Navigation */}
+            <nav className="flex-1 px-4 space-y-2 mt-6 overflow-y-auto">
+                {navItems.map((item) => (
+                    <a
+                        key={item.id}
+                        href="#"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onNavigate(item.id);
+                        }}
+                        className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === item.id
+                            ? 'bg-white text-[#E30613] font-bold shadow-md'
+                            : 'text-white/90 hover:bg-white/10 hover:text-white font-medium'
+                            }`}
+                    >
+                        <span className={`material-icons-outlined mr-3 text-2xl transition-colors ${currentView === item.id ? 'text-[#E30613]' : 'text-white/80 group-hover:text-white'
+                            }`}>
+                            {item.icon}
+                        </span>
+                        {item.label}
+                    </a>
+                ))}
             </nav>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+            {/* Footer / Dark Mode Toggle */}
+            <div className="p-4 border-t border-red-700/50 bg-red-800/20">
                 <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    className="flex items-center w-full px-4 py-3 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors"
                     onClick={toggleDarkMode}
                 >
-                    <span className="material-icons-outlined mr-3">dark_mode</span>
+                    <span className="material-icons-outlined mr-3 text-xl">dark_mode</span>
                     Mode Nit
                 </button>
+                <div className="mt-4 text-center">
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest">UGT Catalunya © 2026</p>
+                </div>
             </div>
         </aside>
     );
 };
+
+export default Sidebar;
