@@ -1,7 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/layout/Sidebar';
+import SignatureManager from '../components/certificates/SignatureManager';
+import { generateCertificate } from '../utils/CertificateGenerator';
+import { studentService } from '../services/studentService';
 
-const Certificates = ({ onNavigate, toggleDarkMode }) => {
+const Certificates = ({ onNavigate, toggleDarkMode, courses = [], students = [] }) => {
+    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const [selectedSignature, setSelectedSignature] = useState(null);
+    const [courseStudents, setCourseStudents] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    // 1. Identify courses that are finished (or all active courses for now)
+    const availableCourses = courses || [];
+
+    // Load students when a course is selected
+    useEffect(() => {
+        const fetchStudents = async () => {
+            if (selectedCourseId) {
+                setLoading(true);
+                try {
+                    const studentsData = await studentService.getStudentsByCourse(selectedCourseId);
+                    // Filter only those who "Passed" (active/registered for now)
+                    setCourseStudents(studentsData);
+                } catch (error) {
+                    console.error("Error loading students for certificate:", error);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setCourseStudents([]);
+            }
+        };
+        fetchStudents();
+    }, [selectedCourseId]);
+
+    const handleGeneratePDF = (student) => {
+        if (!selectedSignature) {
+            alert("Si us plau, selecciona una firma primer.");
+            return;
+        }
+        const course = availableCourses.find(c => c.id === selectedCourseId);
+        if (student && course) {
+            generateCertificate(student, course, selectedSignature);
+        }
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
             <Sidebar currentView="certificates" onNavigate={onNavigate} toggleDarkMode={toggleDarkMode} />
@@ -12,112 +55,104 @@ const Certificates = ({ onNavigate, toggleDarkMode }) => {
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Gestió de Certificats</h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">Emissió i seguiment de les titulacions oficials</p>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <button className="bg-primary hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center shadow-sm">
-                            <span className="material-icons-outlined mr-2 text-[20px]">dynamic_feed</span>
-                            Generar en Bloc
-                        </button>
-                    </div>
                 </header>
 
                 <div className="space-y-8">
-                    <section>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold flex items-center text-slate-800 dark:text-white">
-                                <span className="material-icons-outlined mr-2 text-primary">pending_actions</span>
-                                Cursos Pendents de Certificació
-                            </h2>
-                            <span className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-wider">3 cursos pendents</span>
+                    <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* LEFT COLUMN: Configuration */}
+                        <div className="lg:col-span-1 space-y-6">
+
+                            {/* Course Selector */}
+                            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                                <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center">
+                                    <span className="material-icons-outlined mr-2 text-primary">school</span>
+                                    Seleccionar Curs
+                                </h3>
+                                <select
+                                    className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-primary/50"
+                                    value={selectedCourseId}
+                                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                                >
+                                    <option value="">-- Tria un curs --</option>
+                                    {availableCourses.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-slate-500 mt-2">
+                                    Selecciona el curs per carregar la llista d'alumnes aptes.
+                                </p>
+                            </div>
+
+                            {/* Signature Manager */}
+                            <SignatureManager onSelectSignature={setSelectedSignature} />
                         </div>
-                        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nom del Curs</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Data Finalització</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Alumnes a Certificar</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Accions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 text-primary flex items-center justify-center mr-3">
-                                                        <span className="material-icons-outlined text-lg">gavel</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-800 dark:text-white">Delegats Prevenció I</p>
-                                                        <p className="text-xs text-slate-500">Barcelona · Presencial</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-center text-sm text-slate-600 dark:text-slate-400">12/06/2024</td>
-                                            <td className="px-6 py-5 text-center">
-                                                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm font-bold">18</span>
-                                            </td>
-                                            <td className="px-6 py-5 text-right space-x-2">
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">picture_as_pdf</span> Generar PDF
-                                                </button>
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-md hover:bg-red-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">send</span> Enviar Email
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mr-3">
-                                                        <span className="material-icons-outlined text-lg">language</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-800 dark:text-white">Anglès per a la Negociació</p>
-                                                        <p className="text-xs text-slate-500">Online</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-center text-sm text-slate-600 dark:text-slate-400">14/06/2024</td>
-                                            <td className="px-6 py-5 text-center">
-                                                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm font-bold">12</span>
-                                            </td>
-                                            <td className="px-6 py-5 text-right space-x-2">
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">picture_as_pdf</span> Generar PDF
-                                                </button>
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-md hover:bg-red-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">send</span> Enviar Email
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 rounded bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center mr-3">
-                                                        <span className="material-icons-outlined text-lg">psychology</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-800 dark:text-white">Taller de Resolució de Conflictes</p>
-                                                        <p className="text-xs text-slate-500">Tarragona · Presencial</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-center text-sm text-slate-600 dark:text-slate-400">15/06/2024</td>
-                                            <td className="px-6 py-5 text-center">
-                                                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm font-bold">25</span>
-                                            </td>
-                                            <td className="px-6 py-5 text-right space-x-2">
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">picture_as_pdf</span> Generar PDF
-                                                </button>
-                                                <button className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-md hover:bg-red-700 transition-colors">
-                                                    <span className="material-icons-outlined text-sm mr-1.5">send</span> Enviar Email
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+
+                        {/* RIGHT COLUMN: Student List */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[400px]">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800 dark:text-white flex items-center">
+                                        <span className="material-icons-outlined mr-2 text-primary">people</span>
+                                        Llistat d'Alumnes
+                                    </h3>
+                                    <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">
+                                        {courseStudents.length} alumnes
+                                    </span>
+                                </div>
+
+                                {loading ? (
+                                    <div className="p-10 text-center text-slate-500">
+                                        <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
+                                        <p>Carregant dades...</p>
+                                    </div>
+                                ) : !selectedCourseId ? (
+                                    <div className="p-10 text-center text-slate-400">
+                                        <span className="material-icons-outlined text-4xl mb-2">arrow_back</span>
+                                        <p>Selecciona un curs per començar</p>
+                                    </div>
+                                ) : courseStudents.length === 0 ? (
+                                    <div className="p-10 text-center text-slate-500">
+                                        <p>No s'han trobat alumnes registrats en aquest curs.</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase">
+                                                    <th className="px-6 py-3">Alumne</th>
+                                                    <th className="px-6 py-3">DNI</th>
+                                                    <th className="px-6 py-3 text-right">Accions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {courseStudents.map(student => (
+                                                    <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                                        <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-200">
+                                                            {student.fullName}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-slate-500 font-mono">
+                                                            {student.dni}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <button
+                                                                onClick={() => handleGeneratePDF(student)}
+                                                                className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${selectedSignature
+                                                                        ? 'bg-primary text-white hover:bg-red-700 shadow-sm'
+                                                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                                    }`}
+                                                                disabled={!selectedSignature}
+                                                                title={!selectedSignature ? "Selecciona una firma primer" : "Generar PDF"}
+                                                            >
+                                                                <span className="material-icons-outlined text-sm mr-1">download</span>
+                                                                PDF
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </section>

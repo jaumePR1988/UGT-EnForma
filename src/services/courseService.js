@@ -23,10 +23,15 @@ export const courseService = {
         try {
             const q = query(collection(db, COLLECTION_NAME), orderBy('startDate', 'asc'));
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            return querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Ensure 'students' property exists for UI compatibility
+                    students: data.students !== undefined ? data.students : (data.enrolledCount || 0)
+                };
+            });
         } catch (error) {
             console.error("Error getting courses: ", error);
             throw new Error("No s'han pogut carregar els cursos. Revisa els permisos de Firebase.");
@@ -59,9 +64,8 @@ export const courseService = {
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                 ...courseData,
                 createdAt: serverTimestamp(),
-                enrolledCount: 0,
-                status: 'open',
-                category: courseData.category || 'General', // Para análisis de IA
+                // Removed hardcoded 'enrolledCount' and 'status' to respect UI values
+                category: courseData.category || 'General',
                 maxCapacity: courseData.maxCapacity || 30
             });
             return docRef.id;

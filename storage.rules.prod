@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isStaff() {
+      // In a real app, check custom claims or user role in Firestore
+      // For now, any authenticated user is considered staff
+      return isAuthenticated();
+    }
+
+    // Course Images (Public Read, Staff Write)
+    // Course Images (Public Read, Staff Write)
+    // Using {allPaths=**} because we upload to courses/hero_... which might be interpreted as deeper path if logic changes
+    match /courses/{allPaths=**} {
+      allow read: if true; // Public access for course covers
+      allow write: if isStaff();
+                   // Removed size/type restrictions for debugging, can re-enable later
+                   // && request.resource.size < 5 * 1024 * 1024 // Max 5MB
+                   // && request.resource.contentType.matches('image/.*');
+    }
+
+    // Signatures (Staff Read/Write)
+    match /signatures/{allPaths=**} {
+        allow read, write: if isStaff();
+    }
+
+    // Student Documents (Restricted Access)
+    match /students/{studentId}/{documentId} {
+      allow read, write: if isStaff();
+    }
+    
+    // Default Deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

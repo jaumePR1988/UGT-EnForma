@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // TEMPORARY: Public Access for Development
+    // Since users/roles are not defined yet, we allow everyone to read/write.
+    // WARNING: Restore security rules before production!
+    
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

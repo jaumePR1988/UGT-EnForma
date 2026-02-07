@@ -1,11 +1,26 @@
 import React from 'react';
 import Sidebar from '../components/layout/Sidebar';
+import { courseService } from '../services/courseService';
 
-const ActiveCourses = ({ onNavigate, toggleDarkMode, courses }) => {
+const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) => {
     const copyLink = (courseId) => {
         const url = `${window.location.origin}/public/enroll/${courseId}`;
         navigator.clipboard.writeText(url);
         alert("Enllaç d'inscripció pública copiat!");
+    };
+
+    const handleDelete = async (courseId) => {
+        if (window.confirm("Estàs segur que vols eliminar aquest curs? Aquesta acció no es pot desfer.")) {
+            try {
+                await courseService.deleteCourse(courseId);
+                // Trigger refresh if the function is provided
+                if (refreshCourses) {
+                    await refreshCourses();
+                }
+            } catch (error) {
+                alert("Error eliminant el curs: " + error.message);
+            }
+        }
     };
 
     return (
@@ -31,8 +46,7 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses }) => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Codi</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nom del Curs</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-[40%]">Curs</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estat</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Alumnes</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Inici</th>
@@ -43,8 +57,23 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses }) => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {courses && courses.map((course) => (
                                     <tr key={course.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                        <td className="px-6 py-4 text-sm font-mono text-slate-500">{course.code}</td>
-                                        <td className="px-6 py-4 text-sm font-semibold text-slate-800 dark:text-white">{course.name}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-600">
+                                                    {course.heroImage ? (
+                                                        <img src={course.heroImage} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                            <span className="material-icons-outlined text-lg">image</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-mono text-slate-500 mb-0.5">{course.code}</div>
+                                                    <div className="text-sm font-semibold text-slate-800 dark:text-white">{course.name}</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${course.status === 'En curs' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
                                                 course.status === 'Finalitzat' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-blue-300' :
@@ -71,8 +100,19 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses }) => {
                                             >
                                                 <span className="material-icons-outlined text-[20px]">share</span>
                                             </button>
-                                            <button className="text-slate-400 hover:text-primary transition-colors">
-                                                <span className="material-icons-outlined text-[20px]">more_vert</span>
+                                            <button
+                                                onClick={() => onNavigate(`edit-course/${course.id}`)}
+                                                className="text-slate-400 hover:text-primary transition-colors mr-3"
+                                                title="Editar curs"
+                                            >
+                                                <span className="material-icons-outlined text-[20px]">edit</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(course.id)}
+                                                className="text-slate-400 hover:text-red-600 transition-colors"
+                                                title="Eliminar curs"
+                                            >
+                                                <span className="material-icons-outlined text-[20px]">delete</span>
                                             </button>
                                         </td>
                                     </tr>

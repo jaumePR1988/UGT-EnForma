@@ -206,7 +206,7 @@ const Reports = ({ onNavigate, toggleDarkMode, courses = [], students = [] }) =>
                 </div>
 
                 <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Satisfacció de l'Alumnat</h3>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Satisfacció de l'Alumnat <span className="text-xs font-normal text-slate-500">(Dades simulades)</span></h3>
                     <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart

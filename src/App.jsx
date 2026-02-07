@@ -5,7 +5,8 @@ import { studentService } from './services/studentService';
 import SplashScreen from './pages/SplashScreen';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import ActiveCourses from './pages/ActiveCourses';
+// import ActiveCourses from './pages/ActiveCourses';
+import { Courses } from './pages/Courses';
 import CreateCourse from './pages/CreateCourse';
 import Students from './pages/Students';
 import Certificates from './pages/Certificates';
@@ -14,6 +15,7 @@ import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
 import EnrollStudent from './pages/EnrollStudent';
 import PublicRegistration from './pages/PublicRegistration';
+import PublicAttendance from './pages/PublicAttendance';
 
 function App() {
   const navigate = useNavigate();
@@ -55,6 +57,11 @@ function App() {
   };
 
   const navigateTo = (viewName) => {
+    if (viewName.startsWith('edit-course/') || viewName.startsWith('edit-student/')) {
+      navigate('/' + viewName);
+      return;
+    }
+
     switch (viewName) {
       case 'splash': navigate('/'); break;
       case 'login': navigate('/login'); break;
@@ -82,6 +89,7 @@ function App() {
       navigate('/courses');
     } catch (error) {
       console.error("Error creating course:", error);
+      throw error; // Rethrow so component knows it failed
     }
   };
 
@@ -109,17 +117,29 @@ function App() {
       } />
       <Route path="/create-course" element={
         <CreateCourse
-          onBack={() => navigate('/dashboard')}
+          onBack={() => navigate('/courses')}
           onNavigate={navigateTo}
           toggleDarkMode={toggleDarkMode}
           onSave={handleAddCourse}
         />
       } />
-      <Route path="/courses" element={
-        <ActiveCourses
+      <Route path="/edit-course/:courseId" element={
+        <CreateCourse
+          onBack={() => navigate('/courses')}
           onNavigate={navigateTo}
           toggleDarkMode={toggleDarkMode}
-          courses={courses}
+          onSave={async (updatedCourse) => {
+            await courseService.updateCourse(updatedCourse.id, updatedCourse);
+            await loadCourses();
+            navigate('/courses');
+          }}
+          isEditMode={true}
+        />
+      } />
+      <Route path="/courses" element={
+        <Courses
+          onNavigate={navigateTo}
+          toggleDarkMode={toggleDarkMode}
         />
       } />
       <Route path="/students" element={
@@ -127,6 +147,7 @@ function App() {
           onNavigate={navigateTo}
           toggleDarkMode={toggleDarkMode}
           students={students}
+          refreshStudents={loadStudents}
         />
       } />
       <Route path="/enroll-internal" element={
@@ -137,10 +158,25 @@ function App() {
           onSave={handleAddStudent}
         />
       } />
+      <Route path="/edit-student/:studentId" element={
+        <EnrollStudent
+          onNavigate={navigateTo}
+          toggleDarkMode={toggleDarkMode}
+          courses={courses}
+          onSave={async (updatedStudent) => {
+            await studentService.updateStudent(updatedStudent.id, updatedStudent);
+            await loadStudents();
+            navigate('/students');
+          }}
+          isEditMode={true}
+        />
+      } />
       <Route path="/certificates" element={
         <Certificates
           onNavigate={navigateTo}
           toggleDarkMode={toggleDarkMode}
+          courses={courses}
+          students={students}
         />
       } />
       <Route path="/reports" element={
@@ -165,8 +201,9 @@ function App() {
         />
       } />
 
-      {/* Public Route */}
-      <Route path="/public/enroll/:courseId" element={<PublicRegistration />} />
+      {/* Public Routes */}
+      <Route path="/public/register/:courseId" element={<PublicRegistration />} />
+      <Route path="/public/attendance/:courseId" element={<PublicAttendance />} />
     </Routes>
   );
 }

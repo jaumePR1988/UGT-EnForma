@@ -17,6 +17,24 @@ const COLLECTION_NAME = 'students';
 
 export const studentService = {
     /**
+     * Obtener curso por ID
+     */
+    async getStudentById(id) {
+        try {
+            const docRef = doc(db, COLLECTION_NAME, id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return { id: docSnap.id, ...docSnap.data() };
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error("Error getting student by ID:", error);
+            throw error;
+        }
+    },
+
+    /**
      * Obtener todos los estudiantes (ordenados por fecha de registro)
      */
     async getStudents() {
@@ -61,6 +79,21 @@ export const studentService = {
                 isAffiliated: studentData.isAffiliated || false
             });
 
+            // Increment student count in course
+            if (studentData.courseId) {
+                const courseRef = doc(db, 'courses', studentData.courseId);
+                // We don't wait for this to prevent blocking if it fails separately, 
+                // but good practice to await. For now, best effort.
+                try {
+                    const { increment } = await import('firebase/firestore');
+                    await updateDoc(courseRef, {
+                        students: increment(1)
+                    });
+                } catch (e) {
+                    console.error("Failed to update course count", e);
+                }
+            }
+
             return { id: docRef.id, ...studentData };
         } catch (error) {
             console.error("Error registering student:", error);
@@ -104,6 +137,19 @@ export const studentService = {
         } catch (error) {
             console.error("Error updating student:", error);
             throw new Error("No s'han pogut actualitzar les dades de l'alumne.");
+        }
+    },
+
+    /**
+     * Eliminar un estudiante
+     */
+    async deleteStudent(id) {
+        try {
+            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            return true;
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            throw new Error("No s'ha pogut eliminar l'alumne.");
         }
     }
 };

@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { courseService } from '../services/courseService';
+import { storageService } from '../services/storageService';
 import Sidebar from '../components/layout/Sidebar';
 
 const SidebarStep = ({ number, title, isActive, isCompleted, onClick }) => {
@@ -23,7 +26,8 @@ const SidebarStep = ({ number, title, isActive, isCompleted, onClick }) => {
     );
 };
 
-const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
+const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode = false }) => {
+    const { courseId } = useParams();
     const [step, setStep] = useState(1);
     const [activeSection, setActiveSection] = useState(1); // For Step 1 (Sub-steps 1 & 2)
     const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +40,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
         maxCapacity: 25,
         instructor: '',
         heroImage: null,
+        description: '',
         isMultiSession: false,
         sessions: [],
         materials: [],
@@ -58,6 +63,93 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
     };
 
     const courseSlug = generateSlug(courseData.name);
+
+    useEffect(() => {
+        const loadCourseData = async () => {
+            if (isEditMode && courseId) {
+                try {
+                    const course = await courseService.getCourseById(courseId);
+                    if (course) {
+                        setCourseData(prev => ({
+                            ...prev,
+                            ...course,
+                            // Ensure dates are formatted for input[type="date"] (YYYY-MM-DD)
+                            startDate: course.startDate ? course.startDate.split('T')[0] : '',
+                            endDate: course.endDate ? course.endDate.split('T')[0] : '',
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Error loading course:", error);
+                    alert("Error carregant les dades del curs.");
+                }
+            }
+        };
+        loadCourseData();
+    }, [isEditMode, courseId]);
+
+    // Recursive function to sanitize data for Firestore (removes Files)
+    const sanitizeForFirestore = (obj) => {
+        if (obj === null || obj === undefined) return null;
+        if (obj instanceof File || obj instanceof Blob || (window.FileList && obj instanceof FileList)) {
+            return null; // Remove files
+        }
+        if (Array.isArray(obj)) {
+            return obj.map(item => sanitizeForFirestore(item));
+        }
+        if (typeof obj === 'object') {
+            const newObj = {};
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    newObj[key] = sanitizeForFirestore(obj[key]);
+                }
+            }
+            return newObj;
+        }
+        return obj;
+    };
+
+    const handlePublish = async () => {
+        setIsSubmitting(true);
+        try {
+            console.log("Publishing course...", courseData);
+
+            // 1. Shallow copy
+            let finalCourseData = { ...courseData };
+
+            // 2. Upload Hero Image if it's a Base64 string (newly selected)
+            if (finalCourseData.heroImage && typeof finalCourseData.heroImage === 'string' && finalCourseData.heroImage.startsWith('data:')) {
+                try {
+                    const imagePath = `courses/hero_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const downloadUrl = await storageService.uploadBase64(finalCourseData.heroImage, imagePath);
+                    console.log("Image uploaded to Storage:", downloadUrl);
+                    finalCourseData.heroImage = downloadUrl;
+                } catch (uploadError) {
+                    console.error("Image upload failed:", uploadError);
+                    finalCourseData.heroImage = null;
+                    alert("No s'ha pogut pujar la imatge. El curs es guardarà sense imatge de portada.");
+                }
+            }
+
+            // 3. Deep sanitize 
+            const sanitizedData = sanitizeForFirestore(finalCourseData);
+
+            const newCourse = {
+                ...sanitizedData,
+                code: `CURS-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
+                status: 'Pendent inici',
+                students: 0,
+                progress: 0
+            };
+
+            await onSave(newCourse);
+
+        } catch (error) {
+            console.error("FAILED to publish course:", error);
+            alert("Error al publicar el curs: " + error.message);
+        } finally {
+            if (setIsSubmitting) setIsSubmitting(false);
+        }
+    };
     const publicLink = `${window.location.origin}/public/enroll/${courseSlug}`;
 
     const [isAddingField, setIsAddingField] = useState(false);
@@ -209,7 +301,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                                     </li>
                                 </ol>
                             </nav>
-                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Crear Nou Curs</h1>
+                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{isEditMode ? 'Editar Curs' : 'Crear Nou Curs'}</h1>
                             <p className="text-slate-500 dark:text-slate-400">Configura la nova acció formativa de la UGT de Catalunya</p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -324,6 +416,18 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                                                 />
                                             )}
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Descripció del Curs</label>
+                                        <textarea
+                                            className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3 min-h-[120px]"
+                                            id="description"
+                                            name="description"
+                                            value={courseData.description}
+                                            onChange={handleInputChange}
+                                            placeholder="Escriu una descripció completa del curs..."
+                                            onFocus={() => setActiveSection(1)}
+                                        ></textarea>
                                     </div>
                                 </div>
                             </section>
@@ -493,7 +597,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                                     </li>
                                 </ol>
                             </nav>
-                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Crear Nou Curs</h1>
+                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{isEditMode ? 'Editar Curs' : 'Crear Nou Curs'}</h1>
                             <p className="text-slate-500 dark:text-slate-400">Configura l'equip docent i els materials del curs</p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -737,7 +841,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                                 </li>
                             </ol>
                         </nav>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Pas 4: Inscripció</h1>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Pas 4: {isEditMode ? 'Desar Canvis' : 'Inscripció'}</h1>
                         <p className="text-slate-500 dark:text-slate-400">Finalitza la configuració del procés d'inscripció i publica el curs</p>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -747,18 +851,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                         <button
                             className={`px-6 py-2.5 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition-all shadow-md flex items-center ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                             disabled={isSubmitting}
-                            onClick={async () => {
-                                setIsSubmitting(true);
-                                const newCourse = {
-                                    ...courseData,
-                                    code: `CURS-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
-                                    status: 'Pendent inici',
-                                    students: 0,
-                                    progress: 0
-                                };
-                                await onSave(newCourse);
-                                setIsSubmitting(false);
-                            }}
+                            onClick={handlePublish}
                         >
                             {isSubmitting ? 'Publicant...' : 'Publicar Curs'}
                             {!isSubmitting && <span className="material-icons-outlined ml-2 text-[20px]">publish</span>}
@@ -968,21 +1061,10 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave }) => {
                                 <button
                                     className={`px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-all shadow-md flex items-center ${isSubmitting ? 'opacity-75 cursor-not-allowed' : 'animate-pulse'}`}
                                     disabled={isSubmitting}
-                                    onClick={async () => {
-                                        setIsSubmitting(true);
-                                        const newCourse = {
-                                            ...courseData,
-                                            code: `CURS-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
-                                            status: 'Pendent inici',
-                                            students: 0,
-                                            progress: 0
-                                        };
-                                        await onSave(newCourse);
-                                        setIsSubmitting(false);
-                                    }}
+                                    onClick={handlePublish}
                                 >
                                     {!isSubmitting && <span className="material-icons-outlined mr-2">publish</span>}
-                                    {isSubmitting ? 'Publicant...' : 'Publicar Curs'}
+                                    {isSubmitting ? (isEditMode ? 'Desant...' : 'Publicant...') : (isEditMode ? 'Desar Canvis' : 'Publicar Curs')}
                                 </button>
                             </div>
                         </div>

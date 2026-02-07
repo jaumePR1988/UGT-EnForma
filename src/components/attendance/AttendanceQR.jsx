@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { QrCode, RefreshCw, Smartphone, CheckCircle, Users, Clock, Shield } from 'lucide-react';
+import { RefreshCw, Smartphone, CheckCircle, Users, Clock, Shield } from 'lucide-react';
+import QRCode from "react-qr-code";
 
 export const AttendanceQR = ({ isOpen, onClose, course }) => {
     const [qrValue, setQrValue] = useState("");
@@ -29,7 +30,9 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
         setIsRotating(true);
         // Simulem generació d'un token d'assistència signat
         const token = btoa(`${course.id}-${Date.now()}-${Math.random()}`);
-        setQrValue(`https://enforma.ugt.cat/public/attendance/${course.id}?t=${token}`);
+        // Ensure the URL is absolute for scanning
+        const baseUrl = window.location.origin;
+        setQrValue(`${baseUrl}/public/attendance/${course.id}?t=${token}`);
         setTimeLeft(300);
         setTimeout(() => setIsRotating(false), 500);
     };
@@ -67,9 +70,15 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
                     <div className="absolute -inset-4 bg-gradient-to-tr from-red-600/10 to-blue-500/10 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white p-8 rounded-[2rem] shadow-premium border border-slate-100 flex flex-col items-center">
                         <div className={`p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 transition-all ${isRotating ? 'scale-95 opacity-50' : ''}`}>
-                            {/* Aquí aniria la llibreria qrcode.react, simulem amb placeholder visual */}
-                            <div className="w-56 h-56 flex items-center justify-center bg-white rounded-lg border border-slate-100 overflow-hidden">
-                                <QrCode size={200} strokeWidth={1} className="text-slate-900" />
+                            <div className="w-56 h-56 flex items-center justify-center bg-white rounded-lg border border-slate-100 p-2">
+                                {qrValue && (
+                                    <QRCode
+                                        size={256}
+                                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                        value={qrValue}
+                                        viewBox={`0 0 256 256`}
+                                    />
+                                )}
                             </div>
                         </div>
                         <button
@@ -91,7 +100,7 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                         <div className="flex justify-center text-blue-500 mb-1"><Users size={18} /></div>
-                        <p className="text-lg font-black text-slate-900">{course?.maxCapacity || '-'}</p>
+                        <p className="text-lg font-black text-slate-900">{course?.students || 0}</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Inscrits</p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">

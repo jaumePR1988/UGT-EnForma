@@ -19,14 +19,59 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
         const startMonth = startDate.toLocaleDateString('ca-ES', { month: 'long' });
         const endMonth = endOfWeek.toLocaleDateString('ca-ES', { month: 'long' });
 
-        // Example: "Setmana 24 - Juny 2024" or "10 - 14 Juny"
-        // Let's match the screenshot style roughly: "Setmana [Number] - [Month] [Year]"
-        // Calculating week number is complex, let's use a simpler "10 - 14 Juny 2024" format for clarity
         if (startMonth === endMonth) {
             return `${startDate.getDate()} - ${endOfWeek.getDate()} ${startMonth} ${startDate.getFullYear()}`;
         } else {
             return `${startDate.getDate()} ${startMonth} - ${endOfWeek.getDate()} ${endMonth} ${startDate.getFullYear()}`;
         }
+    };
+
+    // --- Derived Data for Stats ---
+    const pendingCertificates = 0; // Future feature
+    const averageRating = 'N/A';   // Future feature
+
+    // --- Recent Activity Logic ---
+    const getRecentActivity = () => {
+        const studentEvents = students.map(s => ({
+            type: 'registration',
+            title: 'Nova inscripció',
+            subtitle: `${s.fullName} s'ha inscrit a "${s.courseTitle || 'Un curs'}"`,
+            date: s.registeredAt ? (s.registeredAt.seconds ? new Date(s.registeredAt.seconds * 1000) : new Date(s.registeredAt)) : new Date(),
+            color: 'bg-green-500'
+        }));
+
+        const courseEvents = courses.map(c => ({
+            type: 'course',
+            title: 'Nou curs publicat',
+            subtitle: `"${c.name}" ja és visible`,
+            date: c.createdAt ? (c.createdAt.seconds ? new Date(c.createdAt.seconds * 1000) : new Date(c.createdAt)) : new Date(),
+            color: 'bg-blue-500'
+        }));
+
+        const allEvents = [...studentEvents, ...courseEvents];
+        allEvents.sort((a, b) => b.date - a.date);
+        return allEvents.slice(0, 5);
+    };
+
+    const recentActivity = getRecentActivity();
+
+    // --- Goal Calculation ---
+    const QUARTERLY_GOAL = 50; // Set a realistic goal for demo
+    const goalPercentage = Math.min(100, Math.round((students.length / QUARTERLY_GOAL) * 100));
+
+    const getTimeAgo = (date) => {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return `Fa ${Math.floor(interval)} anys`;
+        interval = seconds / 2592000;
+        if (interval > 1) return `Fa ${Math.floor(interval)} mesos`;
+        interval = seconds / 86400;
+        if (interval > 1) return `Fa ${Math.floor(interval)} dies`;
+        interval = seconds / 3600;
+        if (interval > 1) return `Fa ${Math.floor(interval)} hores`;
+        interval = seconds / 60;
+        if (interval > 1) return `Fa ${Math.floor(interval)} minuts`;
+        return "Fa un moment";
     };
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -87,17 +132,17 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
                             <span className="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded-full">Pendent</span>
                         </div>
                         <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Certificats Pendents</h3>
-                        <p className="text-3xl font-bold mt-1 text-slate-800 dark:text-white">156</p>
+                        <p className="text-3xl font-bold mt-1 text-slate-800 dark:text-white">{pendingCertificates}</p>
                     </div>
                     <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg">
                                 <span className="material-icons-outlined">star</span>
                             </div>
-                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Mitjana</span>
+                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{averageRating}</span>
                         </div>
                         <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Valoració Mitjana</h3>
-                        <p className="text-3xl font-bold mt-1 text-slate-800 dark:text-white">4.8/5</p>
+                        <p className="text-3xl font-bold mt-1 text-slate-800 dark:text-white">{averageRating}</p>
                     </div>
                 </div>
 
@@ -135,10 +180,9 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
 
                                     const dayName = dayDate.toLocaleDateString('ca-ES', { weekday: 'short' });
                                     const dayNumber = dayDate.getDate();
-                                    const dateString = dayDate.toLocaleDateString('ca-ES'); // DD/MM/YYYY match with course.startDate?
-                                    // Note: course.startDate is DD/MM/YYYY. Need to unify formats.
-                                    // Simple manual format for comparison:
-                                    const comparisonDate = `${dayDate.getDate().toString().padStart(2, '0')}/${(dayDate.getMonth() + 1).toString().padStart(2, '0')}/${dayDate.getFullYear()}`;
+
+                                    // FIXED: Match YYYY-MM-DD format from CreateCourse.jsx (Using Local Time)
+                                    const comparisonDate = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
 
                                     const daysCourses = courses ? courses.filter(c => c.startDate === comparisonDate) : [];
 
@@ -188,12 +232,16 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
                                             return (
                                                 <div key={course.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                                                            <span className="material-icons-outlined text-slate-400">
-                                                                {course.category === 'Dret Laboral' ? 'gavel' :
-                                                                    course.category === 'Prevenció de Riscos' ? 'health_and_safety' :
-                                                                        course.category === 'Igualtat i Gènere' ? 'people' : 'school'}
-                                                            </span>
+                                                        <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
+                                                            {course.heroImage ? (
+                                                                <img src={course.heroImage} alt={course.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="material-icons-outlined text-slate-400">
+                                                                    {course.category === 'Dret Laboral' ? 'gavel' :
+                                                                        course.category === 'Prevenció de Riscos' ? 'health_and_safety' :
+                                                                            course.category === 'Igualtat i Gènere' ? 'people' : 'school'}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div>
                                                             <h4 className="font-semibold text-sm text-slate-800 dark:text-white truncate max-w-[150px]">{course.name}</h4>
@@ -237,44 +285,20 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
                             </div>
                             <div className="p-6">
                                 <ul className="space-y-6">
-                                    <li className="flex items-start">
-                                        <div className="w-2 h-2 mt-1.5 bg-green-500 rounded-full mr-4 flex-shrink-0"></div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800 dark:text-white">Nova inscripció</p>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                {students.length > 0
-                                                    ? `${students[students.length - 1].fullName} s'ha inscrit a "${students[students.length - 1].courseTitle}"`
-                                                    : "Joan Garcia s'ha inscrit a \"Dret Laboral I\""}
-                                            </p>
-                                            <p className="text-[10px] text-slate-400 mt-1 uppercase">
-                                                {students.length > 0 ? "Fa un moment" : "Fa 5 minuts"}
-                                            </p>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start">
-                                        <div className="w-2 h-2 mt-1.5 bg-primary rounded-full mr-4 flex-shrink-0"></div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800 dark:text-white">Certificat Generat</p>
-                                            <p className="text-xs text-slate-500 mt-1">Es can generar 15 certificats del curs "Salut Laboral"</p>
-                                            <p className="text-[10px] text-slate-400 mt-1 uppercase">Fa 42 minuts</p>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start">
-                                        <div className="w-2 h-2 mt-1.5 bg-blue-500 rounded-full mr-4 flex-shrink-0"></div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800 dark:text-white">Nou curs publicat</p>
-                                            <p className="text-xs text-slate-500 mt-1">"Intel·ligència Artificial per a Delegats" ja és visible</p>
-                                            <p className="text-[10px] text-slate-400 mt-1 uppercase">Fa 2 hores</p>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start">
-                                        <div className="w-2 h-2 mt-1.5 bg-orange-400 rounded-full mr-4 flex-shrink-0"></div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800 dark:text-white">Modificació d'Horari</p>
-                                            <p className="text-xs text-slate-500 mt-1">Aula canviada per al curs de Negociació del dijous</p>
-                                            <p className="text-[10px] text-slate-400 mt-1 uppercase">Fa 5 hores</p>
-                                        </div>
-                                    </li>
+                                    {recentActivity.length > 0 ? (
+                                        recentActivity.map((activity, index) => (
+                                            <li key={index} className="flex items-start">
+                                                <div className={`w-2 h-2 mt-1.5 ${activity.color} rounded-full mr-4 flex-shrink-0`}></div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-slate-800 dark:text-white">{activity.title}</p>
+                                                    <p className="text-xs text-slate-500 mt-1">{activity.subtitle}</p>
+                                                    <p className="text-[10px] text-slate-400 mt-1 uppercase">{getTimeAgo(activity.date)}</p>
+                                                </div>
+                                            </li>
+                                        ))
+                                    ) : (
+                                        <li className="text-sm text-slate-400 italic text-center py-4">No hi ha activitat recent.</li>
+                                    )}
                                 </ul>
                                 <button className="w-full mt-6 py-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors border border-dashed border-slate-300 dark:border-slate-700 rounded-lg">
                                     Veure tot l'historial
@@ -284,14 +308,14 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
                         <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-6">
                             <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4">Objectiu del Trimestre</h3>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-2xl font-bold text-slate-800 dark:text-white">78%</span>
-                                <span className="text-xs text-slate-500">1,560 / 2,000 alumnes</span>
+                                <span className="text-2xl font-bold text-slate-800 dark:text-white">{goalPercentage}%</span>
+                                <span className="text-xs text-slate-500">{students.length} / {QUARTERLY_GOAL} alumnes</span>
                             </div>
                             <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                                <div className="bg-primary h-full w-[78%]"></div>
+                                <div className="bg-primary h-full" style={{ width: `${goalPercentage}%` }}></div>
                             </div>
                             <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-                                Estem un 5% per sobre de l'objectiu respecte al mateix període de l'any anterior.
+                                {goalPercentage >= 100 ? "Objectiu assolit! 🎉" : "Objectiu trimestral en curs."}
                             </p>
                         </div>
                     </div>

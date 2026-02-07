@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { studentService } from '../services/studentService';
 import Sidebar from '../components/layout/Sidebar';
 
-const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => {
+const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEditMode = false }) => {
+    const { studentId } = useParams();
     // Extended properties for mock courses to include custom fields configuration
     // In a real app, this would come from the backend/database
     const coursesWithConfig = courses.map(c => ({
@@ -15,6 +18,12 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => 
     // Example of specific configuration for demonstration (if we had IDs)
     // coursesWithConfig[0].customFields.push({ id: 'diet', label: 'Restriccions alimentàries', type: 'text', required: false });
 
+    // Create mapping of IDs to courses for easier access
+    const courseMap = coursesWithConfig.reduce((acc, course) => {
+        acc[course.id] = course;
+        return acc;
+    }, {});
+
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [formData, setFormData] = useState({
         name: '',
@@ -25,6 +34,34 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => 
         affiliate: '',
         // Dynamic fields will be added here
     });
+
+    useEffect(() => {
+        const loadStudentData = async () => {
+            if (isEditMode && studentId) {
+                try {
+                    const student = await studentService.getStudentById(studentId);
+                    if (student) {
+                        setFormData({
+                            name: student.fullName || '',
+                            dni: student.dni || '',
+                            email: student.email || '',
+                            phone: student.phone || '',
+                            federation: student.federation || '',
+                            affiliate: student.affiliate || '',
+                            ...student // Spread other fields
+                        });
+                        if (student.courseId) {
+                            setSelectedCourseId(student.courseId);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading student:", error);
+                    alert("Error carregant les dades de l'alumne.");
+                }
+            }
+        };
+        loadStudentData();
+    }, [isEditMode, studentId]);
 
     const selectedCourse = coursesWithConfig.find(c => c.id.toString() === selectedCourseId);
 
@@ -41,6 +78,7 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => 
 
         // Prepare object for list view (Student.jsx expects fullName, courseTitle, etc)
         const studentToSave = {
+            id: isEditMode ? studentId : undefined, // Include ID if editing
             fullName: formData.name,
             email: formData.email,
             dni: formData.dni,
@@ -64,8 +102,8 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => 
             <main className="lg:ml-64 p-6 lg:p-10">
                 <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Inscriure Alumne Manualment</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">Alta de nou participant i assignació a curs actiu</p>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{isEditMode ? 'Editar Alumne' : 'Inscripció Manual'}</h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">{isEditMode ? 'Modifica les dades del participant' : 'Alta de nou participant i assignació a curs actiu'}</p>
                     </div>
                     <div className="flex items-center space-x-4">
                         <button
@@ -265,8 +303,8 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave }) => 
                                 type="submit"
                                 disabled={!selectedCourseId}
                             >
-                                <span className="material-icons-outlined mr-2 text-[20px]">how_to_reg</span>
-                                Confirmar Inscripció
+                                <span className="material-icons-outlined mr-2 text-[20px]">{isEditMode ? 'save' : 'how_to_reg'}</span>
+                                {isEditMode ? 'Desar Canvis' : 'Confirmar Inscripció'}
                             </button>
                         </div>
                     </form>
