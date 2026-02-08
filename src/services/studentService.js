@@ -109,16 +109,23 @@ export const studentService = {
     async getStudentsByCourse(courseId) {
         if (!courseId) return [];
         try {
+            // Optimització: Evitem orderBy de Firestore per problemes d'índexs
             const q = query(
                 collection(db, COLLECTION_NAME),
-                where("courseId", "==", courseId),
-                orderBy('registeredAt', 'desc')
+                where("courseId", "==", courseId)
             );
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({
+            const students = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            // Ordenar en memòria
+            return students.sort((a, b) => {
+                const dateA = a.registeredAt?.toDate?.() || new Date(0);
+                const dateB = b.registeredAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
         } catch (error) {
             console.error("Error getting students by course:", error);
             throw new Error("Error en carregar els alumnes del curs.");
@@ -248,25 +255,31 @@ export const studentService = {
     subscribeToStudentsByCourse(courseId, callback) {
         if (!courseId) return () => { };
 
+        // Optimització: Eliminem orderBy de la query per no dependre d'índexs compostos i ordenem en memòria
         const q = query(
             collection(db, COLLECTION_NAME),
-            where("courseId", "==", courseId),
-            orderBy('registeredAt', 'desc')
+            where("courseId", "==", courseId)
         );
-
-        // Import onSnapshot dynamically if not at top, or just use it if imported (I will add import)
-        // Since I can edit top, I'll assume I edit top too. But tool is replace_file_content.
-        // It's safer to use the imported one if I add it to imports.
-        // Let's rely on the import I'm adding.
 
         return onSnapshot(q, (snapshot) => {
             const students = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            // Ordenar en memòria (més segur sense índexs)
+            students.sort((a, b) => {
+                const dateA = a.registeredAt?.toDate?.() || new Date(0);
+                const dateB = b.registeredAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+
             callback(students);
         }, (error) => {
             console.error("Error subscribing to students:", error);
         });
+    }, (error) => {
+    console.error("Error subscribing to students:", error);
+});
     }
 };
