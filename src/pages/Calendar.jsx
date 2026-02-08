@@ -40,41 +40,7 @@ const Calendar = ({ onNavigate, toggleDarkMode, courses = [] }) => {
 
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
-    const days = [];
-
-    // Empty cells for days before the 1st
-    for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="h-32 bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800"></div>);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateString = `${day.toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
-
-        // Find courses starting on this day
-        const dayCourses = courses.filter(c => c.startDate === dateString);
-
-        const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
-
-        days.push(
-            <div key={day} className={`h-32 border border-slate-100 dark:border-slate-800 p-2 relative group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : 'bg-white dark:bg-card-dark'}`}>
-                <div className={`text-sm font-semibold mb-2 ${isToday ? 'text-blue-600 bg-blue-100 w-7 h-7 rounded-full flex items-center justify-center' : 'text-slate-700 dark:text-slate-300'}`}>
-                    {day}
-                </div>
-                <div className="space-y-1 overflow-y-auto max-h-[80px] custom-scrollbar">
-                    {dayCourses.map((course, idx) => (
-                        <div
-                            key={idx}
-                            className="text-[10px] p-1.5 rounded border-l-2 bg-primary/10 border-primary text-slate-700 dark:text-slate-200 truncate cursor-pointer hover:bg-primary hover:text-white transition-colors"
-                            title={course.name}
-                        >
-                            {course.name}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
+    // Grid logic moved directly to JSX
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -131,7 +97,74 @@ const Calendar = ({ onNavigate, toggleDarkMode, courses = [] }) => {
 
                     {/* Calendar Grid */}
                     <div className="grid grid-cols-7 bg-slate-200 dark:bg-slate-800 gap-[1px]">
-                        {days}
+                        {/* Empty cells for days before the 1st */}
+                        {Array.from({ length: firstDay }).map((_, i) => (
+                            <div key={`empty-${i}`} className="min-h-[120px] bg-slate-50/50 dark:bg-slate-800/20"></div>
+                        ))}
+
+                        {/* Days of the month */}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const day = i + 1;
+                            // Format YYYY-MM-DD
+                            const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
+
+                            // Filter events for this day
+                            const dayEvents = courses.reduce((acc, course) => {
+                                // 1. Start Date (Green)
+                                if (course.startDate === dateStr) {
+                                    acc.push({ type: 'start', course, color: 'bg-green-100 text-green-700 border-green-500', label: 'Inici' });
+                                }
+                                // 2. End Date (Green)
+                                if (course.endDate === dateStr) {
+                                    acc.push({ type: 'end', course, color: 'bg-green-100 text-green-700 border-green-500', label: 'Fi' });
+                                }
+                                // 3. Registration Deadline (Red)
+                                if (course.registrationDeadline === dateStr) {
+                                    acc.push({ type: 'deadline', course, color: 'bg-red-100 text-red-700 border-red-500', label: 'Límit' });
+                                }
+                                // 4. Sessions (Blue) - NOW CHECKING ALL SESSIONS
+                                if (course.sessions && course.sessions.length > 0) {
+                                    const todaysSessions = course.sessions.filter(s => s.date === dateStr);
+                                    todaysSessions.forEach(session => {
+                                        acc.push({
+                                            type: 'session',
+                                            course,
+                                            session,
+                                            color: 'bg-blue-100 text-blue-700 border-blue-500',
+                                            label: session.startTime
+                                        });
+                                    });
+                                }
+                                return acc;
+                            }, []);
+
+                            return (
+                                <div key={day} className={`min-h-[120px] bg-white dark:bg-card-dark p-2 relative group hover:bg-slate-50 transition-colors ${isToday ? 'bg-blue-50/30' : ''}`}>
+                                    <div className={`text-sm font-semibold mb-2 ${isToday ? 'text-blue-600 bg-blue-100 w-7 h-7 rounded-full flex items-center justify-center' : 'text-slate-700 dark:text-slate-300'}`}>
+                                        {day}
+                                    </div>
+                                    <div className="space-y-1 overflow-y-auto max-h-[80px] custom-scrollbar">
+                                        {dayEvents.map((event, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`text-[10px] p-1 rounded border-l-2 truncate cursor-pointer transition-colors ${event.color}`}
+                                                title={`${event.course.name} - ${event.label}`}
+                                            >
+                                                <span className="font-bold mr-1">{event.label}</span>
+                                                {event.course.name}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {/* Legend */}
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-4 text-xs text-slate-600 justify-center">
+                        <div className="flex items-center"><span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span> {t('calendar.legend.start_end', 'Inici / Fi de Curs')}</div>
+                        <div className="flex items-center"><span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span> {t('calendar.legend.session', 'Sessió Lectiva')}</div>
+                        <div className="flex items-center"><span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span> {t('calendar.legend.deadline', 'Límit Inscripció')}</div>
                     </div>
                 </div>
             </main>

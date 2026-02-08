@@ -2,13 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { storageService } from '../../services/storageService';
+import { Modal } from '../ui/Modal';
+import { useTranslation } from 'react-i18next';
 
 const SignatureManager = ({ onSelectSignature }) => {
+    const { t } = useTranslation();
     const [signatures, setSignatures] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showUploadForm, setShowUploadForm] = useState(false);
     const [newSigData, setNewSigData] = useState({ name: '', role: '', file: null });
+
+    // Modal State
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+        confirmText: '',
+        cancelText: ''
+    });
+
+    const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+
+    const showModal = ({ title, message, type = 'info', onConfirm = null }) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+            confirmText: t('common.accept'),
+            cancelText: t('common.cancel')
+        });
+    };
+
+    const handleConfirmModal = () => {
+        if (modalConfig.onConfirm) modalConfig.onConfirm();
+        closeModal();
+    };
 
     // Sync signatures from Firestore
     useEffect(() => {
@@ -33,7 +66,11 @@ const SignatureManager = ({ onSelectSignature }) => {
     const handleUpload = async (e) => {
         e.preventDefault();
         if (!newSigData.file || !newSigData.name || !newSigData.role) {
-            alert("Si us plau, completa tots els camps i selecciona un fitxer.");
+            showModal({
+                title: t('common.error'),
+                message: t('certificates.modal.missing_fields') || "Si us plau, completa tots els camps i selecciona un fitxer.",
+                type: 'warning'
+            });
             return;
         }
 
@@ -65,7 +102,11 @@ const SignatureManager = ({ onSelectSignature }) => {
 
         } catch (error) {
             console.error("Error uploading signature:", error);
-            alert("Error al pujar la firma.");
+            showModal({
+                title: t('common.error'),
+                message: t('certificates.modal.upload_error') || "Error al pujar la firma.",
+                type: 'error'
+            });
         } finally {
             setIsUploading(false);
         }
@@ -76,20 +117,26 @@ const SignatureManager = ({ onSelectSignature }) => {
         if (onSelectSignature) onSelectSignature(sig);
     };
 
-    const handleDelete = async (id, e) => {
+    const handleDelete = (id, e) => {
         e.stopPropagation();
-        if (window.confirm('Eliminar aquesta firma?')) {
-            try {
-                await deleteDoc(doc(db, 'signatures', id));
-                if (selectedId === id) {
-                    setSelectedId(null);
-                    if (onSelectSignature) onSelectSignature(null);
+        showModal({
+            title: t('certificates.modal.delete_title') || 'Eliminar firma',
+            message: t('certificates.modal.delete_confirm') || 'Estàs segur que vols eliminar aquesta firma?',
+            type: 'warning',
+            onConfirm: async () => {
+                try {
+                    await deleteDoc(doc(db, 'signatures', id));
+                    if (selectedId === id) {
+                        setSelectedId(null);
+                        if (onSelectSignature) onSelectSignature(null);
+                    }
+                } catch (error) {
+                    console.error("Error deleting signature:", error);
+                    // We can show another modal or just log it, showcasing a modal is safer but tricky inside a modal callback without improved state management.
+                    // For now keeping it simple as deletion failure is rare.
                 }
-            } catch (error) {
-                console.error("Error deleting signature:", error);
-                alert("Error al eliminar.");
             }
-        }
+        });
     };
 
     return (
@@ -207,6 +254,31 @@ const SignatureManager = ({ onSelectSignature }) => {
                     </div>
                 )}
             </div>
+
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+                footer={
+                    <div className="flex gap-2">
+                        <button onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+                            {modalConfig.cancelText}
+                        </button>
+                        {modalConfig.onConfirm && (
+                            <button
+                                onClick={handleConfirmModal}
+                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm ${modalConfig.type === 'error' ? 'bg-red-600' :
+                                    modalConfig.type === 'warning' ? 'bg-amber-500' : 'bg-primary'
+                                    }`}
+                            >
+                                {modalConfig.confirmText}
+                            </button>
+                        )}
+                    </div>
+                }
+            >
+                <p className="text-slate-600 p-4">{modalConfig.message}</p>
+            </Modal>
         </div>
     );
 };

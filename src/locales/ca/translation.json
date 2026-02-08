@@ -1,0 +1,322 @@
+{
+    "dashboard": {
+        "title": "Panell de Control",
+        "subtitle": "Gestió global de la formació sindical",
+        "search_placeholder": "Buscar cursos, alumnes...",
+        "new_course": "Nou Curs",
+        "kpi": {
+            "active_courses": "Cursos Actius",
+            "total_registrations": "Inscripcions Totals",
+            "pending_certificates": "Certificats Pendents",
+            "enrollment_courses": "Cursos en Inscripció",
+            "avg_rating": "Valoració Mitjana",
+            "votes": "votos"
+        },
+        "activity": {
+            "new_registration": "Nova inscripció",
+            "registered_in": "s'ha inscrit a",
+            "new_course": "Nou curs publicat",
+            "is_visible": "ja és visible"
+        },
+        "sections": {
+            "weekly_calendar": "Calendari Setmanal de Formació",
+            "open_courses": "Cursos en fase d'inscripció",
+            "no_open_courses": "No hi ha cursos en fase d'inscripció.",
+            "create_course_now": "Crear un curs ara",
+            "recent_activity": "Activitat Recent",
+            "no_activity": "No hi ha activitat recent.",
+            "view_all_history": "Veure tot l'historial",
+            "quarterly_goal": "Objectiu del Trimestre",
+            "goal_reached": "Objectiu assolit! 🎉",
+            "goal_in_progress": "Objectiu trimestral en curs.",
+            "students_count": "{{count}} / {{goal}} alumnes",
+            "percent_full": "{{percent}}% ple",
+            "spots_left": "{{spots}} places disponibles",
+            "view_all": "Veure tots"
+        }
+    },
+    "sidebar": {
+        "dashboard": "Tauler de Control",
+        "active_courses": "Cursos Actius",
+        "students": "Alumnat",
+        "certificates": "Certificats",
+        "reports": "Informes",
+        "teachers": "Docència",
+        "calendar": "Calendari",
+        "settings": "Ajustes"
+    },
+    "common": {
+        "loading": "Carregant...",
+        "error": "Hi ha hagut un error",
+        "save": "Desar",
+        "cancel": "Cancel·lar",
+        "back": "Tornar",
+        "time_ago": {
+            "years": "Fa {{count}} anys",
+            "months": "Fa {{count}} mesos",
+            "days": "Fa {{count}} dies",
+            "hours": "Fa {{count}} hores",
+            "minutes": "Fa {{count}} minuts",
+            "just_now": "Fa un moment"
+        }
+    },
+    "courses": {
+        "title": "Gestió del Catàleg Formatiu",
+        "new_button": "CREAR NOU CURS",
+        "loading": "Carregant cursos...",
+        "no_courses": "No s'han trobat cursos actius.",
+        "sessions_count": "{{count}} sessions programades",
+        "no_instructor": "Professorat no assignat",
+        "table": {
+            "code_name": "Codi & Nom del Curs",
+            "instructor": "Professorat",
+            "start_date": "Data inici",
+            "distribution": "Distribució",
+            "status": "Estat",
+            "actions": "Accions"
+        },
+        "status": {
+            "open": "Obert",
+            "in_progress": "En curs",
+            "finished": "Finalitzat"
+        }
+    },
+    "students": {
+        "title": "Gestió d'Alumnat",
+        "subtitle": "Administració centralitzada de participants i inscripcions",
+        "search_placeholder": "Buscar per nom, DNI o email...",
+        "new_button": "Inscriure Alumne",
+        "stats": {
+            "active": "Alumnes Actius",
+            "new": "Noves Inscripcions",
+            "drop": "Taxa d'Abandonament"
+        },
+        "table": {
+            "title": "Llistat detallat d'alumnat",
+            "student": "Alumne/a",
+            "course": "Curs",
+            "status": "Estat",
+            "actions": "Accions"
+        },
+        "pagination": {
+            "showing": "Mostrant {{start}} a {{end}} de {{total}} resultats",
+            "prev": "Anterior",
+            "next": "Següent"
+        },
+        "detail": {
+            "title": "Detall de l'Alumne",
+            "personal_info": "Informació Personal",
+            "enrollment_info": "Inscripció i Curs",
+            "contact": "Contactar",
+            "edit": "Editar Dades",
+            "registered_at": "Data d'inscripció"
+        },
+        "status_values": {
+            "registered": "Registrat / Sol·licitant",
+            "inscrit": "Inscrit / Confirmat",
+            "pagat": "Pagat",
+            "baixa": "Baixa"
+        },
+        "filters": {
+            "title": "Filtres",
+            "course_label": "Curs",
+            "status_label": "Estat",
+            "federation_label": "Federació",
+            "clear": "Netejar filtres",
+            "show": "Mostrar filtres",
+            "hide": "Amagar filtres",
+            "all_courses": "Tots els cursos",
+            "all_statuses": "Tots els estats"
+        },
+        "report": {
+            "button": "Informe PDF",
+            "title": "Informe d'Alumnat",
+            "wait_message": "Generant informe...",
+            "no_data": "No hi ha dades per generar l'informe."
+        }
+    },
+    "public_registration": {
+        "title_confirmed": "Inscripció Confirmada!",
+        "message_confirmed": "Hem rebut les teves dades correctament. Rebràs un correu de confirmació en breu.",
+        "digital_ticket": "Ticket Digital",
+        "show_code": "Mostra aquest codi a l'entrada",
+        "back_to_home": "Tornar a l'inici",
+        "loading_course": "Carregant Curs...",
+        "access_protected": "Accés Protegit",
+        "course_password": "Contrasenya del Curs",
+        "password_error": "Contrasenya incorrecta",
+        "access_form": "Accedir al Formulari",
+        "invalid_link": "Enllaç no vàlid o curs no trobat.",
+        "dates": "Dates",
+        "location": "Ubicació",
+        "schedule": "Horari",
+        "sessions": "Sessions",
+        "sessions_count_one": "Sessió Única Intensiva",
+        "sessions_count_many": "{{count}} Sessions Presencials",
+        "description": "Descripció del Curs",
+        "default_description": "Inscriu-te al programa de capacitació líder de la UGT Catalunya...",
+        "calendar_sessions": "Calendari de Sessions",
+        "session_n": "SESSIÓ {{n}}",
+        "register_now": "Inscriu-te Ara",
+        "secure_spot": "Assegura la teva plaça en pocs segons",
+        "form": {
+            "first_name": "Nom",
+            "name_surnames": "Nom i Cognoms",
+            "surname1": "1r Cognom",
+            "surname2": "2n Cognom",
+            "dni": "DNI / NIE",
+            "phone": "Telèfon",
+            "email": "Email",
+            "company": "Centre / Empresa",
+            "federation": "Federació (Sector)",
+            "is_affiliate": "Ets afiliat/da a la UGT?",
+            "yes": "Sí",
+            "no": "No",
+            "privacy_policy": "Accepto la política de privacitat i autoritzo la UGT de Catalunya a tractar les meves dades.",
+            "submit": "INSCRIURE'M",
+            "waitlist": "LLISTA d'ESPERA",
+            "federations": {
+                "public_services": "Serveis Públics",
+                "industry": "Indústria",
+                "services": "Serveis"
+            }
+        }
+    },
+    "session_feedback": {
+        "thank_you": "Gràcies!",
+        "feedback_submitted": "La teva valoració s'ha enviat correctament. La teva opinió ens ajuda a millorar.",
+        "close_tab": "Ja pots tancar aquesta pestanya.",
+        "title": "Valoració de la Sessió",
+        "question": "Com valoraries l'experiència a la classe d'avui?",
+        "ratings": {
+            "1": "Molt millorable",
+            "2": "Just",
+            "3": "Bé",
+            "4": "Molt bé",
+            "5": "Excel·lent!"
+        },
+        "comment_label": "Comentari (Opcional)",
+        "comment_placeholder": "Què t'ha semblat la sessió? Algun suggeriment?",
+        "error_required": "Si us plau, selecciona una puntuació.",
+        "submit": "Enviar Valoración",
+        "sending": "Enviant...",
+        "brand": "UGT EnForma"
+    },
+    "certificates": {
+        "title": "Gestió de Certificats",
+        "subtitle": "Emissió i seguiment de les titulacions oficiales",
+        "select_course": "Seleccionar Curs",
+        "select_course_placeholder": "-- Tria un curs --",
+        "select_course_help": "Selecciona el curs per carregar la llista d'alumnes aptes.",
+        "student_list": "Llistat d'Alumnes",
+        "students_count": "{{count}} alumnes",
+        "select_course_start": "Selecciona un curs per començar",
+        "no_students": "No s'han trobat alumnes registrats en aquest curs.",
+        "table": {
+            "student": "Alumne",
+            "dni": "DNI",
+            "attendance": "Assistència",
+            "actions": "Accions"
+        },
+        "min_attendance": "Mín. {{min}}%",
+        "pdf_button": {
+            "generate": "Generar PDF",
+            "select_signature": "Selecciona una firma primer",
+            "force": "Forçar generació ({{percentage}}% < {{min}}%)",
+            "force_short": "Forçar PDF",
+            "pdf": "PDF",
+            "warning_signature": "Si us plau, selecciona una firma primer.",
+            "warning_attendance": "Aquest alumne té un {{percentage}}% d'assistència (Mínim: {{min}}%).\\nVols generar el certificat igualment?",
+            "error_signature": "No s'ha pogut carregar la imatge de la firma. El PDF es generarà sense ella."
+        },
+        "modal": {
+            "missing_signature_title": "Falta la firma",
+            "missing_signature_message": "Si us plau, selecciona una firma amb anterioritat.",
+            "low_attendance_title": "Assistència Insuficient",
+            "force_generate": "Generar igualment",
+            "missing_fields": "Si us plau, completa tots els camps i selecciona un fitxer.",
+            "upload_error": "Error al pujar la firma.",
+            "delete_title": "Eliminar firma",
+            "delete_confirm": "Estàs segur que vols eliminar aquesta firma?"
+        },
+        "history": {
+            "title": "Historial de Certificats Enviats",
+            "filter": "Filtrar historial...",
+            "sent_success": "certificats enviats correctament",
+            "sent_partial": "{{sent}}/{{total}} enviats ({{errors}} errors)",
+            "details": "Detalls",
+            "retry": "Reintentar",
+            "load_more": "CARREGAR MÉS REGISTRES"
+        }
+    },
+    "settings": {
+        "title": "Configuració",
+        "subtitle": "Gestiona el teu perfil, preferències i equip.",
+        "tabs": {
+            "profile": "El Meu Perfil",
+            "team": "Equip Docent",
+            "notifications": "Notificacions",
+            "maintenance": "Manteniment"
+        },
+        "profile": {
+            "title": "Informació Personal",
+            "name": "Nom Complet",
+            "email": "Email",
+            "role": "Càrrec",
+            "department": "Departament"
+        },
+        "team": {
+            "title": "Gestió d'Equip Docent",
+            "subtitle": "Afegeix o elimina instructors que poden impartir cursos.",
+            "add_label": "Nom del Docent",
+            "add_placeholder": "Ex: Maria García",
+            "add_button": "Afegir",
+            "adding": "Afegint...",
+            "no_instructors": "No hi ha docents registrats.",
+            "loading": "Carregant docents..."
+        }
+    },
+    "course_feedback": {
+        "title_finished": "Curs Finalitzat!",
+        "message_finished": "Moltes gràcies per valorar el curs complet. Esperem que t'hagi estat molt útil.",
+        "title": "Valoració Final del Curs",
+        "question": "Enhorabona per finalitzar! Com valoraries el curs en general?",
+        "comment_label": "Comentari General (Opcional)",
+        "comment_placeholder": "Què és el que més t'ha agradat? Què milloraries?",
+        "submit": "Enviar Valoració Final"
+    },
+    "login": {
+        "subtitle": "Gestió de Formació Sindical",
+        "hero_title": "Formació per a la classe treballadora.",
+        "hero_description": "Accedeix a la plataforma de gestió formativa de la Unió General de Treballadores i Treballadors de Catalunya.",
+        "welcome_title": "Benvingut de nou",
+        "welcome_message": "Introdueix les teves credencials per accedir al CRM.",
+        "email_label": "Correu electrònic",
+        "password_label": "Contrasenya",
+        "remember_me": "Recorda'm",
+        "forgot_password": "Has oblidat la contrasenya?",
+        "submit_button": "INICIAR SESSIÓ"
+    },
+    "calendar": {
+        "legend": {
+            "start_end": "Inici / Fi de Curs",
+            "session": "Sessió Lectiva",
+            "deadline": "Límit Inscripció"
+        }
+    },
+    "confirm": {
+        "delete_course_title": "Eliminar Curs",
+        "delete_course_desc": "Estàs segur que vols eliminar aquest curs? Aquesta acció no es pot desfer.",
+        "delete_student_title": "Eliminar Alumne",
+        "delete_student_desc": "Estàs segur que vols eliminar aquest alumne? Se suprimiran totes les seves dades d'assistència.",
+        "delete_teacher_title": "Eliminar Docent",
+        "delete_teacher_desc": "Estàs segur que vols eliminar aquest docent de l'equip?",
+        "sync_counts_title": "Sincronitzar Comptes",
+        "sync_counts_desc": "Això recalcularà el nombre d'alumnes de tots els cursos basant-se en les inscripcions reals. Aquest procés pot trigar uns moments.",
+        "irreversible": "Aquesta acció és irreversible. Totes les dades associades es perdran del sistema.",
+        "review_data": "Assegura't de revisar bé les dades abans de continuar amb aquesta operació.",
+        "yes_delete": "Sí, eliminar",
+        "yes_continue": "Sí, continuar",
+        "accept": "D'acord"
+    }
+}

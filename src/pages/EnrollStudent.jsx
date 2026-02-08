@@ -48,6 +48,7 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEdi
                             phone: student.phone || '',
                             federation: student.federation || '',
                             affiliate: student.affiliate || '',
+                            status: student.status || 'registered', // Default status
                             ...student // Spread other fields
                         });
                         if (student.courseId) {
@@ -261,6 +262,22 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEdi
                                             <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">No</span>
                                         </label>
                                     </div>
+                                </div>
+
+                                {/* Status Field (Only in Edit Mode or if authorized) */}
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Estat de la inscripció</label>
+                                    <select
+                                        name="status"
+                                        value={formData.status || 'registered'}
+                                        onChange={handleInputChange}
+                                        className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5"
+                                    >
+                                        <option value="registered">Registrat / Sol·licitant</option>
+                                        <option value="Inscrit">Inscrit / Confirmat</option>
+                                        <option value="Pagat">Pagat</option>
+                                        <option value="Baixa">Baixa / Cancel·lat</option>
+                                    </select>
                                 </div>
 
                                 {/* Dynamic Fields Section */}

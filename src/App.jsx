@@ -153,6 +153,7 @@ function App() {
           onNavigate={navigateTo}
           toggleDarkMode={toggleDarkMode}
           students={students}
+          courses={courses}
           refreshStudents={loadStudents}
         />
       } />

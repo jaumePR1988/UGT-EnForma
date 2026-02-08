@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Sidebar from '../components/layout/Sidebar';
 import { instructorService } from '../services/instructorService';
 import { courseService } from '../services/courseService';
 import { Button } from '../components/ui/Button'; // Assuming we can use this or standard button
-import { Trash2, Plus, UserPlus } from 'lucide-react';
+import { Trash2, Plus, UserPlus, RefreshCw } from 'lucide-react';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 const Settings = ({ onNavigate, toggleDarkMode }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('profile');
     const [instructors, setInstructors] = useState([]);
     const [newInstructorName, setNewInstructorName] = useState('');
     const [loadingInstructors, setLoadingInstructors] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, type: 'danger', onConfirm: () => { }, title: '', description: '', confirmText: '' });
 
     useEffect(() => {
         if (activeTab === 'team') {
@@ -45,40 +49,54 @@ const Settings = ({ onNavigate, toggleDarkMode }) => {
         }
     };
 
-    const handleDeleteInstructor = async (id) => {
-        if (window.confirm("Estàs segur que vols eliminar aquest docent?")) {
-            setLoading(true); // Set loading for delete instructor
-            try {
-                await instructorService.deleteInstructor(id);
-                loadInstructors();
-            } catch (error) {
-                alert("Error eliminant instructor: " + error.message);
-            } finally {
-                setLoading(false); // Reset loading
+    const handleDeleteInstructor = (id) => {
+        setConfirmConfig({
+            isOpen: true,
+            type: 'danger',
+            title: t('confirm.delete_teacher_title'),
+            description: t('confirm.delete_teacher_desc'),
+            confirmText: t('confirm.yes_delete'),
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    await instructorService.deleteInstructor(id);
+                    loadInstructors();
+                } catch (error) {
+                    alert("Error eliminant instructor: " + error.message);
+                } finally {
+                    setLoading(false);
+                }
             }
-        }
+        });
     };
 
-    const handleSyncCounts = async () => {
-        if (!window.confirm("Això recalcularà el nombre d'alumnes de tots els cursos basant-se en les inscripcions reals. Vols continuar?")) return;
-
-        setLoading(true);
-        try {
-            const result = await courseService.syncAllCourseCounts();
-            alert(`Sincronització completada! S'han actualitzat ${result.updatedCourses} cursos.`);
-        } catch (error) {
-            console.error(error);
-            alert("Error durant la sincronització: " + error.message);
-        } finally {
-            setLoading(false);
-        }
+    const handleSyncCounts = () => {
+        setConfirmConfig({
+            isOpen: true,
+            type: 'warning',
+            title: t('confirm.sync_counts_title'),
+            description: t('confirm.sync_counts_desc'),
+            confirmText: t('confirm.yes_continue'),
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    const result = await courseService.syncAllCourseCounts();
+                    alert(`Sincronització completada! S'han actualitzat ${result.updatedCourses} cursos.`);
+                } catch (error) {
+                    console.error(error);
+                    alert("Error durant la sincronització: " + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     const tabs = [
-        { id: 'profile', label: 'El Meu Perfil', icon: 'person' },
-        { id: 'team', label: 'Equip Docent', icon: 'groups' },
-        { id: 'notifications', label: 'Notificacions', icon: 'notifications' },
-        { id: 'maintenance', label: 'Manteniment', icon: 'build' }
+        { id: 'profile', label: t('settings.tabs.profile'), icon: 'person' },
+        { id: 'team', label: t('settings.tabs.team'), icon: 'groups' },
+        { id: 'notifications', label: t('settings.tabs.notifications'), icon: 'notifications' },
+        { id: 'maintenance', label: t('settings.tabs.maintenance'), icon: 'build' }
     ];
 
     return (
@@ -87,8 +105,8 @@ const Settings = ({ onNavigate, toggleDarkMode }) => {
 
             <main className="lg:ml-64 p-6 lg:p-10">
                 <header className="mb-8">
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Configuració</h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Gestiona el teu perfil, preferències i equip.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('settings.title')}</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">{t('settings.subtitle')}</p>
                 </header>
 
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -162,19 +180,19 @@ const Settings = ({ onNavigate, toggleDarkMode }) => {
                                 <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
                                     <div className="flex justify-between items-center mb-6">
                                         <div>
-                                            <h2 className="text-lg font-bold">Gestió d'Equip Docent</h2>
-                                            <p className="text-sm text-slate-500">Afegeix o elimina instructors que poden impartir cursos.</p>
+                                            <h2 className="text-lg font-bold">{t('settings.team.title')}</h2>
+                                            <p className="text-sm text-slate-500">{t('settings.team.subtitle')}</p>
                                         </div>
                                     </div>
 
                                     {/* Add Instructor Form */}
                                     <form onSubmit={handleAddInstructor} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg mb-6 flex gap-3 items-end">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nom del Docent</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t('settings.team.add_label')}</label>
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="Ex: Maria García"
+                                                placeholder={t('settings.team.add_placeholder')}
                                                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm"
                                                 value={newInstructorName}
                                                 onChange={(e) => setNewInstructorName(e.target.value)}
@@ -185,16 +203,16 @@ const Settings = ({ onNavigate, toggleDarkMode }) => {
                                             disabled={loading || !newInstructorName.trim()}
                                             className="bg-primary hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors flex items-center mb-[1px]"
                                         >
-                                            {loading ? 'Afegint...' : 'Afegir'}
+                                            {loading ? t('settings.team.adding') : t('settings.team.add_button')}
                                         </button>
                                     </form>
 
                                     {/* Instructors List */}
                                     <div className="space-y-2">
                                         {loadingInstructors ? (
-                                            <p className="text-sm text-slate-500 text-center py-4">Carregant docents...</p>
+                                            <p className="text-sm text-slate-500 text-center py-4">{t('settings.team.loading')}</p>
                                         ) : instructors.length === 0 ? (
-                                            <p className="text-sm text-slate-500 text-center py-4">No hi ha docents registrats.</p>
+                                            <p className="text-sm text-slate-500 text-center py-4">{t('settings.team.no_instructors')}</p>
                                         ) : (
                                             instructors.map((instructor) => (
                                                 <div key={instructor.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg group">
@@ -279,6 +297,17 @@ const Settings = ({ onNavigate, toggleDarkMode }) => {
 
                     </div>
                 </div>
+
+                <ConfirmDialog
+                    isOpen={confirmConfig.isOpen}
+                    onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+                    onConfirm={confirmConfig.onConfirm}
+                    title={confirmConfig.title}
+                    description={confirmConfig.description}
+                    confirmText={confirmConfig.confirmText}
+                    cancelText={t('common.cancel')}
+                    type={confirmConfig.type}
+                />
             </main>
         </div>
     );

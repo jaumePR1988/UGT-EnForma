@@ -14,29 +14,29 @@
 
   /* Card Component */
   .card {
-    @apply bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-all duration-300;
+    @apply bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300;
   }
 
   /* Table Styles */
   .table-container {
-    @apply min-w-full divide-y divide-slate-200 dark:divide-slate-800;
+    @apply min-w-full divide-y divide-slate-200;
   }
 
   .table-header-cell {
-    @apply px-6 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 sticky top-0 backdrop-blur-sm z-10;
+    @apply px-6 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100 sticky top-0 backdrop-blur-sm z-10;
   }
 
   .table-cell {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 font-medium border-b border-slate-50 dark:border-slate-800/50 transition-colors duration-200;
+    @apply px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-medium border-b border-slate-50 transition-colors duration-200;
   }
 
   .table-row {
-    @apply hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors duration-200 cursor-default;
+    @apply hover:bg-slate-50 transition-colors duration-200 cursor-default;
   }
 
   /* Input Fields */
   .input-field {
-    @apply w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-ugt-red/20 focus:border-ugt-red transition-all outline-none;
+    @apply w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-ugt-red/20 focus:border-ugt-red transition-all outline-none;
   }
 }
 
@@ -81,12 +81,28 @@
   }
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-slide-up {
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom Scrollbar */
@@ -106,14 +122,6 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
 }
 
 .shadow-premium {

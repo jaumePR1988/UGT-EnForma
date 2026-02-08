@@ -79,7 +79,7 @@ export const studentService = {
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                 ...studentData,
                 registeredAt: serverTimestamp(),
-                status: 'registered',
+                status: studentData.status || 'registered',
                 isAffiliated: studentData.isAffiliated || false
             });
 
@@ -278,8 +278,45 @@ export const studentService = {
         }, (error) => {
             console.error("Error subscribing to students:", error);
         });
-    }, (error) => {
-    console.error("Error subscribing to students:", error);
-});
+
+
+
+    },
+
+    /**
+     * Mark certificate as generated for a student
+     */
+    async setCertificateGenerated(studentId) {
+        try {
+            const studentRef = doc(db, COLLECTION_NAME, studentId);
+            await updateDoc(studentRef, {
+                certificateGenerated: true,
+                certificateGeneratedAt: serverTimestamp()
+            });
+            return true;
+        } catch (error) {
+            console.error("Error in setCertificateGenerated:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * MIGRATION TOOL: Update all 'registered' students to 'Inscrit'
+     */
+    async migrateOldStudentsToInscrit() {
+        try {
+            const q = query(collection(db, COLLECTION_NAME), where("status", "==", "registered"));
+            const snapshot = await getDocs(q);
+
+            const updatePromises = snapshot.docs.map(docSnap =>
+                updateDoc(doc(db, COLLECTION_NAME, docSnap.id), { status: 'Inscrit' })
+            );
+
+            await Promise.all(updatePromises);
+            return snapshot.size;
+        } catch (error) {
+            console.error("Migration error:", error);
+            throw error;
+        }
     }
 };

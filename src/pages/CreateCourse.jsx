@@ -42,6 +42,8 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
         instructor: '',
         heroImage: null,
         description: '',
+        name_es: '',
+        description_es: '',
         isMultiSession: false,
         sessions: [],
         materials: [],
@@ -284,6 +286,31 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
         }));
     };
 
+    const insertBold = (fieldName) => {
+        const textarea = document.getElementById(fieldName);
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = courseData[fieldName] || '';
+        const selectedText = text.substring(start, end);
+
+        // If something is selected, wrap it. If not, just insert ****
+        const newText = text.substring(0, start) + `**${selectedText}**` + text.substring(end);
+
+        setCourseData(prev => ({
+            ...prev,
+            [fieldName]: newText
+        }));
+
+        // Restore focus and position
+        setTimeout(() => {
+            textarea.focus();
+            const newPos = selectedText ? end + 4 : start + 2;
+            textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+    };
+
     // Scroll to top on step change
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -319,18 +346,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{isEditMode ? 'Editar Curs' : 'Crear Nou Curs'}</h1>
                             <p className="text-slate-500 dark:text-slate-400">Configura la nova acció formativa de la UGT de Catalunya</p>
                         </div>
-                        <div className="flex items-center space-x-3">
-                            <button className="px-5 py-2.5 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 bg-white dark:bg-card-dark shadow-sm">
-                                Desa com a Esborrany
-                            </button>
-                            <button
-                                className="px-6 py-2.5 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition-all shadow-md flex items-center"
-                                onClick={() => setStep(2)}
-                            >
-                                Següent
-                                <span className="material-icons-outlined ml-2 text-[20px]">arrow_forward</span>
-                            </button>
-                        </div>
+                        {/* Header Controls Removed as per request */}
                     </header>
 
                     <div className="flex flex-col lg:flex-row gap-10">
@@ -433,7 +449,18 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Descripció del Curs</label>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Descripció del Curs</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => insertBold('description')}
+                                                className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded transition-colors"
+                                                title="Afegeix negreta"
+                                            >
+                                                <span className="material-icons-outlined text-sm font-black">format_bold</span>
+                                                NEGRETA
+                                            </button>
+                                        </div>
                                         <textarea
                                             className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3 min-h-[120px]"
                                             id="description"
@@ -443,6 +470,52 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                                             placeholder="Escriu una descripció completa del curs..."
                                             onFocus={() => setActiveSection(1)}
                                         ></textarea>
+                                        <p className="text-[10px] text-slate-400 mt-1">Pots utilitzar **text** per marcar paraules en negreta.</p>
+                                    </div>
+
+                                    {/* Secció de Traduccions */}
+                                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <span className="material-icons-outlined text-sm">translate</span>
+                                            Traduccions (Opcional)
+                                        </h3>
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2" htmlFor="name_es">Nombre del Curso (Castellano)</label>
+                                                <input
+                                                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3"
+                                                    name="name_es"
+                                                    id="name_es"
+                                                    value={courseData.name_es || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Ej: Taller de Mediación y Resolución de Conflictos"
+                                                    type="text"
+                                                    onFocus={() => setActiveSection(1)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="description_es">Descripción (Castellano)</label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => insertBold('description_es')}
+                                                        className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded transition-colors"
+                                                    >
+                                                        <span className="material-icons-outlined text-sm font-black">format_bold</span>
+                                                        NEGRITA
+                                                    </button>
+                                                </div>
+                                                <textarea
+                                                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3 min-h-[100px]"
+                                                    id="description_es"
+                                                    name="description_es"
+                                                    value={courseData.description_es || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Escribe la descripción completa en castellano..."
+                                                    onFocus={() => setActiveSection(1)}
+                                                ></textarea>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
@@ -647,18 +720,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{isEditMode ? 'Editar Curs' : 'Crear Nou Curs'}</h1>
                             <p className="text-slate-500 dark:text-slate-400">Configura l'equip docent i els materials del curs</p>
                         </div>
-                        <div className="flex items-center space-x-3">
-                            <button className="px-5 py-2.5 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 bg-white dark:bg-card-dark shadow-sm">
-                                Desa com a Esborrany
-                            </button>
-                            <button
-                                className="px-6 py-2.5 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition-all shadow-md flex items-center"
-                                onClick={() => setStep(3)}
-                            >
-                                Següent
-                                <span className="material-icons-outlined ml-2 text-[20px]">arrow_forward</span>
-                            </button>
-                        </div>
+                        {/* Header Controls Removed as per request */}
                     </header>
                     <div className="flex flex-col lg:flex-row gap-10">
                         <aside className="lg:w-72 shrink-0">
@@ -897,19 +959,7 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Pas 4: {isEditMode ? 'Desar Canvis' : 'Inscripció'}</h1>
                         <p className="text-slate-500 dark:text-slate-400">Finalitza la configuració del procés d'inscripció i publica el curs</p>
                     </div>
-                    <div className="flex items-center space-x-3">
-                        <button className="px-5 py-2.5 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 bg-white dark:bg-card-dark shadow-sm">
-                            Desa com a Esborrany
-                        </button>
-                        <button
-                            className={`px-6 py-2.5 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition-all shadow-md flex items-center ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
-                            disabled={isSubmitting}
-                            onClick={handlePublish}
-                        >
-                            {isSubmitting ? 'Publicant...' : 'Publicar Curs'}
-                            {!isSubmitting && <span className="material-icons-outlined ml-2 text-[20px]">publish</span>}
-                        </button>
-                    </div>
+                    {/* Header Controls Removed as per request */}
                 </header>
 
                 <div className="flex flex-col lg:flex-row gap-10">

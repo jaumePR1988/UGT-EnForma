@@ -27,18 +27,18 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' })
             ></div>
 
             {/* Modal Panel */}
-            <div className={`relative bg-white rounded-2xl shadow-2xl transform transition-all w-full ${getMaxWidth()} flex flex-col max-h-[90vh] overflow-hidden`}>
+            <div className={`relative bg-white rounded-2xl shadow-2xl transform transition-all w-full ${getMaxWidth()} flex flex-col max-h-[90vh] overflow-hidden animate-scale-in`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-10">
-                    <h3 className="text-xl font-bold text-slate-900 truncate pr-4">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white truncate pr-4 tracking-tight">
                         {title}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="p-2 -mr-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        className="p-2 -mr-2 text-slate-400 hover:text-primary hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700"
                         aria-label="Close modal"
                     >
-                        <X size={24} />
+                        <X size={20} strokeWidth={3} />
                     </button>
                 </div>
 
@@ -49,7 +49,7 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' })
 
                 {/* Footer */}
                 {footer && (
-                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                    <div className="px-8 py-5 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100/80 dark:border-slate-800/80 backdrop-blur-sm flex items-center justify-end gap-4 shrink-0">
                         {footer}
                     </div>
                 )}

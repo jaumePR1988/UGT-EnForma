@@ -1,0 +1,322 @@
+{
+    "dashboard": {
+        "title": "Panel de Control",
+        "subtitle": "Gestión global de la formación sindical",
+        "search_placeholder": "Buscar cursos, alumnos...",
+        "new_course": "Nuevo Curso",
+        "kpi": {
+            "active_courses": "Cursos Activos",
+            "total_registrations": "Inscripciones Totales",
+            "pending_certificates": "Certificados Pendientes",
+            "enrollment_courses": "Cursos en Inscripción",
+            "avg_rating": "Valoración Media",
+            "votes": "votos"
+        },
+        "activity": {
+            "new_registration": "Nueva inscripción",
+            "registered_in": "se ha inscrito a",
+            "new_course": "Nuevo curso publicado",
+            "is_visible": "ya es visible"
+        },
+        "sections": {
+            "weekly_calendar": "Calendario Semanal de Formación",
+            "open_courses": "Cursos en fase de inscripción",
+            "no_open_courses": "No hay cursos en fase de inscripción.",
+            "create_course_now": "Crear un curso ahora",
+            "recent_activity": "Actividad Reciente",
+            "no_activity": "No hay actividad reciente.",
+            "view_all_history": "Ver todo el historial",
+            "quarterly_goal": "Objetivo del Trimestre",
+            "goal_reached": "¡Objetivo alcanzado! 🎉",
+            "goal_in_progress": "Objetivo trimestral en curso.",
+            "students_count": "{{count}} / {{goal}} alumnos",
+            "percent_full": "{{percent}}% lleno",
+            "spots_left": "{{spots}} plazas disponibles",
+            "view_all": "Ver todos"
+        }
+    },
+    "sidebar": {
+        "dashboard": "Panel de Control",
+        "active_courses": "Cursos Activos",
+        "students": "Alumnado",
+        "certificates": "Certificados",
+        "reports": "Informes",
+        "teachers": "Docencia",
+        "calendar": "Calendario",
+        "settings": "Ajustes"
+    },
+    "common": {
+        "loading": "Cargando...",
+        "error": "Ha ocurrido un error",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "back": "Volver",
+        "time_ago": {
+            "years": "Hace {{count}} años",
+            "months": "Hace {{count}} meses",
+            "days": "Hace {{count}} días",
+            "hours": "Hace {{count}} horas",
+            "minutes": "Hace {{count}} minutos",
+            "just_now": "Hace un momento"
+        }
+    },
+    "courses": {
+        "title": "Gestión del Catálogo Formativo",
+        "new_button": "CREAR NUEVO CURSO",
+        "loading": "Cargando cursos...",
+        "no_courses": "No se han encontrado cursos activos.",
+        "sessions_count": "{{count}} sesiones programadas",
+        "no_instructor": "Profesorado no asignado",
+        "table": {
+            "code_name": "Código & Nombre del Curso",
+            "instructor": "Profesorado",
+            "start_date": "Fecha inicio",
+            "distribution": "Distribución",
+            "status": "Estado",
+            "actions": "Acciones"
+        },
+        "status": {
+            "open": "Abierto",
+            "in_progress": "En curso",
+            "finished": "Finalizado"
+        }
+    },
+    "students": {
+        "title": "Gestión de Alumnado",
+        "subtitle": "Administración centralizada de participantes e inscripciones",
+        "search_placeholder": "Buscar por nombre, DNI o email...",
+        "new_button": "Inscribir Alumno",
+        "stats": {
+            "active": "Alumnos Activos",
+            "new": "Nuevas Inscripciones",
+            "drop": "Tasa de Abandono"
+        },
+        "table": {
+            "title": "Listado detallado de alumnado",
+            "student": "Alumno/a",
+            "course": "Curso",
+            "status": "Estado",
+            "actions": "Acciones"
+        },
+        "pagination": {
+            "showing": "Mostrando {{start}} a {{end}} de {{total}} resultados",
+            "prev": "Anterior",
+            "next": "Siguiente"
+        },
+        "detail": {
+            "title": "Detalle del Alumno",
+            "personal_info": "Información Personal",
+            "enrollment_info": "Inscripción y Curso",
+            "contact": "Contactar",
+            "edit": "Editar Datos",
+            "registered_at": "Fecha de inscripción"
+        },
+        "status_values": {
+            "registered": "Registrado / Solicitante",
+            "inscrit": "Inscrito / Confirmado",
+            "pagat": "Pagado",
+            "baixa": "Baja / Cancelado"
+        },
+        "filters": {
+            "title": "Filtros",
+            "course_label": "Curso",
+            "status_label": "Estado",
+            "federation_label": "Federación",
+            "clear": "Limpiar filtros",
+            "show": "Mostrar filtros",
+            "hide": "Ocultar filtros",
+            "all_courses": "Todos los cursos",
+            "all_statuses": "Todos los estados"
+        },
+        "report": {
+            "button": "Informe PDF",
+            "title": "Informe de Alumnos",
+            "wait_message": "Generando informe...",
+            "no_data": "No hay datos para generar el informe."
+        }
+    },
+    "public_registration": {
+        "title_confirmed": "¡Inscripción Confirmada!",
+        "message_confirmed": "Hemos recibido tus datos correctamente. Recibirás un correo de confirmación en breve.",
+        "digital_ticket": "Ticket Digital",
+        "show_code": "Muestra este código en la entrada",
+        "back_to_home": "Volver al inicio",
+        "loading_course": "Cargando Curso...",
+        "access_protected": "Acceso Protegido",
+        "course_password": "Contraseña del Curso",
+        "password_error": "Contraseña incorrecta",
+        "access_form": "Acceder al Formulario",
+        "invalid_link": "Enlace no válido o curso no encontrado.",
+        "dates": "Fechas",
+        "location": "Ubicación",
+        "schedule": "Horario",
+        "sessions": "Sesiones",
+        "sessions_count_one": "Sesión Única Intensiva",
+        "sessions_count_many": "{{count}} Sesiones Presenciales",
+        "description": "Descripción del Curso",
+        "default_description": "Inscríbete en el programa de capacitación líder...",
+        "calendar_sessions": "Calendario de Sesiones",
+        "session_n": "SESIÓN {{n}}",
+        "register_now": "Inscríbete Ahora",
+        "secure_spot": "Asegura tu plaza en pocos segundos",
+        "form": {
+            "first_name": "Nombre",
+            "name_surnames": "Nombre y Apellidos",
+            "surname1": "1er Apellido",
+            "surname2": "2º Apellido",
+            "dni": "DNI / NIE",
+            "phone": "Teléfono",
+            "email": "Email",
+            "company": "Centro / Empresa",
+            "federation": "Federación (Sector)",
+            "is_affiliate": "¿Eres afiliado/a a la UGT?",
+            "yes": "Sí",
+            "no": "No",
+            "privacy_policy": "Acepto la política de privacidad y autorizo a la UGT de Cataluña a tratar mis datos.",
+            "submit": "INSCRIBIRME",
+            "waitlist": "LISTA DE ESPERA",
+            "federations": {
+                "public_services": "Servicios Públicos",
+                "industry": "Industria",
+                "services": "Servicios"
+            }
+        }
+    },
+    "session_feedback": {
+        "thank_you": "¡Gracias!",
+        "feedback_submitted": "Tu valoración se ha enviado correctamente. Tu opinión nos ayuda a mejorar.",
+        "close_tab": "Ya puedes cerrar esta pestaña.",
+        "title": "Valoración de la Sesión",
+        "question": "¿Cómo valorarías la experiencia en la clase de hoy?",
+        "ratings": {
+            "1": "Muy mejorable",
+            "2": "Justo",
+            "3": "Bien",
+            "4": "Muy bien",
+            "5": "¡Excelente!"
+        },
+        "comment_label": "Comentario (Opcional)",
+        "comment_placeholder": "¿Qué te ha parecido la sesión? ¿Alguna sugerencia?",
+        "error_required": "Por favor, selecciona una puntuación.",
+        "submit": "Enviar Valoración",
+        "sending": "Enviando...",
+        "brand": "UGT EnForma"
+    },
+    "certificates": {
+        "title": "Gestión de Certificados",
+        "subtitle": "Emisión y seguimiento de las titulaciones oficiales",
+        "select_course": "Seleccionar Curso",
+        "select_course_placeholder": "-- Elige un curso --",
+        "select_course_help": "Selecciona el curso para cargar la lista de alumnos aptos.",
+        "student_list": "Listado de Alumnos",
+        "students_count": "{{count}} alumnos",
+        "select_course_start": "Selecciona un curso para empezar",
+        "no_students": "No se han encontrado alumnos registrados en este curso.",
+        "table": {
+            "student": "Alumno",
+            "dni": "DNI",
+            "attendance": "Asistencia",
+            "actions": "Acciones"
+        },
+        "min_attendance": "Mín. {{min}}%",
+        "pdf_button": {
+            "generate": "Generar PDF",
+            "select_signature": "Selecciona una firma primero",
+            "force": "Forzar generación ({{percentage}}% < {{min}}%)",
+            "force_short": "Forzar PDF",
+            "pdf": "PDF",
+            "warning_signature": "Por favor, selecciona una firma primero.",
+            "warning_attendance": "Este alumno tiene un {{percentage}}% de asistencia (Mínimo: {{min}}%).\\n¿Quieres generar el certificado igualmente?",
+            "error_signature": "No se ha podido cargar la imagen de la firma. El PDF se generará sin ella."
+        },
+        "modal": {
+            "missing_signature_title": "Falta la firma",
+            "missing_signature_message": "Por favor, selecciona una firma antes de generar el certificado.",
+            "low_attendance_title": "Asistencia Insuficiente",
+            "force_generate": "Generar igualmente",
+            "missing_fields": "Por favor, completa todos los campos y selecciona un archivo.",
+            "upload_error": "Error al subir la firma.",
+            "delete_title": "Eliminar firma",
+            "delete_confirm": "¿Estás seguro de que quieres eliminar esta firma?"
+        },
+        "history": {
+            "title": "Historial de Certificados Enviados",
+            "filter": "Filtrar historial...",
+            "sent_success": "certificados enviados correctamente",
+            "sent_partial": "{{sent}}/{{total}} enviados ({{errors}} errores)",
+            "details": "Detalles",
+            "retry": "Reintentar",
+            "load_more": "CARGAR MÁS REGISTRES"
+        }
+    },
+    "settings": {
+        "title": "Configuración",
+        "subtitle": "Gestiona tu perfil, preferencias y equipo.",
+        "tabs": {
+            "profile": "Mi Perfil",
+            "team": "Equipo Docente",
+            "notifications": "Notificaciones",
+            "maintenance": "Mantenimiento"
+        },
+        "profile": {
+            "title": "Información Personal",
+            "name": "Nombre Completo",
+            "email": "Email",
+            "role": "Cargo",
+            "department": "Departamento"
+        },
+        "team": {
+            "title": "Gestión de Equipo Docente",
+            "subtitle": "Añade o elimina instructores que pueden impartir cursos.",
+            "add_label": "Nombre del Docente",
+            "add_placeholder": "Ej: Maria García",
+            "add_button": "Añadir",
+            "adding": "Añadiendo...",
+            "no_instructors": "No hay docentes registrados.",
+            "loading": "Cargando docentes..."
+        }
+    },
+    "course_feedback": {
+        "title_finished": "¡Curso Finalizado!",
+        "message_finished": "Muchas gracias por valorar el curso completo. Esperamos que te haya sido muy útil.",
+        "title": "Valoración Final del Curso",
+        "question": "¡Enhorabuena por finalizar! ¿Cómo valorarías el curso en general?",
+        "comment_label": "Comentario General (Opcional)",
+        "comment_placeholder": "¿Qué es lo que más te ha gustado? ¿Qué mejorarías?",
+        "submit": "Enviar Valoración Final"
+    },
+    "login": {
+        "subtitle": "Gestión de Formación Sindical",
+        "hero_title": "Formación para la clase trabajadora.",
+        "hero_description": "Accede a la plataforma de gestión formativa de la Unión General de Trabajadoras y Trabajadores de Cataluña.",
+        "welcome_title": "Bienvenido de nuevo",
+        "welcome_message": "Introduce tus credenciales para acceder al CRM.",
+        "email_label": "Correo electrónico",
+        "password_label": "Contraseña",
+        "remember_me": "Recuérdame",
+        "forgot_password": "¿Has olvidado la contraseña?",
+        "submit_button": "INICIAR SESIÓN"
+    },
+    "calendar": {
+        "legend": {
+            "start_end": "Inicio / Fin de Curso",
+            "session": "Sesión Lectiva",
+            "deadline": "Límite Inscripción"
+        }
+    },
+    "confirm": {
+        "delete_course_title": "Eliminar Curso",
+        "delete_course_desc": "¿Estás seguro de que quieres eliminar este curso? Esta acción no se puede deshacer.",
+        "delete_student_title": "Eliminar Alumno",
+        "delete_student_desc": "¿Estás seguro de que quieres eliminar a este alumno? Se borrarán todos sus datos de asistencia.",
+        "delete_teacher_title": "Eliminar Docente",
+        "delete_teacher_desc": "¿Estás seguro de que quieres eliminar a este docente del equipo?",
+        "sync_counts_title": "Sincronizar Cuentas",
+        "sync_counts_desc": "Esto recalculará el número de alumnos de todos los cursos basándose en las inscripciones reales. Este proceso puede tardar unos momentos.",
+        "irreversible": "Esta acción es irreversible. Todos los datos asociados se perderán del sistema.",
+        "review_data": "Asegúrate de revisar bien los datos antes de continuar con esta operación.",
+        "yes_delete": "Sí, eliminar",
+        "yes_continue": "Sí, continuar",
+        "accept": "De acuerdo"
+    }
+}

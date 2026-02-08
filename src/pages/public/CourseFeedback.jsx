@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { Star, Send, CheckCircle, MessageSquare, Award } from 'lucide-react';
 import { feedbackService } from '../../services/feedbackService';
@@ -6,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { courseService } from '../../services/courseService';
 
 const CourseFeedback = () => {
+    const { t, i18n } = useTranslation();
     const { courseId } = useParams();
 
     const [rating, setRating] = useState(0);
@@ -33,7 +35,7 @@ const CourseFeedback = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (rating === 0) {
-            setError('Si us plau, selecciona una puntuació.');
+            setError(t('session_feedback.error_required'));
             return;
         }
 
@@ -62,13 +64,12 @@ const CourseFeedback = () => {
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Award size={40} className="text-blue-600" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900">Curs Finalitzat!</h2>
+                    <h2 className="text-2xl font-black text-slate-900">{t('course_feedback.title_finished')}</h2>
                     <p className="text-slate-600">
-                        Moltes gràcies per valorar el curs complet.
-                        Esperem que t'hagi estat molt útil.
+                        {t('course_feedback.message_finished')}
                     </p>
                     <div className="pt-4">
-                        <p className="text-sm text-slate-400">Ja pots tancar aquesta pestanya.</p>
+                        <p className="text-sm text-slate-400">{t('session_feedback.close_tab')}</p>
                     </div>
                 </div>
             </div>
@@ -81,15 +82,24 @@ const CourseFeedback = () => {
                 <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-600 w-full"></div>
 
                 <div className="p-8 space-y-8">
-                    <div className="text-center">
-                        <h1 className="text-2xl font-black text-slate-900 mb-2">Valoració Final del Curs</h1>
+                    <div className="text-center relative">
+                        {/* Language Switcher - Absolute Position for Clean Look */}
+                        <div className="absolute top-0 right-0">
+                            <button
+                                onClick={() => i18n.changeLanguage(i18n.language === 'es' ? 'ca' : 'es')}
+                                className="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+                            >
+                                {i18n.language === 'es' ? 'CA' : 'ES'}
+                            </button>
+                        </div>
+                        <h1 className="text-2xl font-black text-slate-900 mb-2">{t('course_feedback.title')}</h1>
                         {course && (
                             <p className="text-indigo-600 font-medium text-lg mt-2">
-                                {course.name}
+                                {i18n.language === 'es' && course.name_es ? course.name_es : course.name}
                             </p>
                         )}
                         <p className="text-slate-500 text-sm mt-4">
-                            Enhorabona per finalitzar! Com valoraries el curs en general?
+                            {t('course_feedback.question')}
                         </p>
                     </div>
 
@@ -110,11 +120,11 @@ const CourseFeedback = () => {
                                 ))}
                             </div>
                             <div className="text-sm font-medium text-slate-400 min-h-[20px]">
-                                {rating === 1 && "Molt millorable"}
-                                {rating === 2 && "Just"}
-                                {rating === 3 && "Bé"}
-                                {rating === 4 && "Molt bé"}
-                                {rating === 5 && "Excel·lent!"}
+                                {rating === 1 && t('session_feedback.ratings.1')}
+                                {rating === 2 && t('session_feedback.ratings.2')}
+                                {rating === 3 && t('session_feedback.ratings.3')}
+                                {rating === 4 && t('session_feedback.ratings.4')}
+                                {rating === 5 && t('session_feedback.ratings.5')}
                             </div>
                         </div>
 
@@ -122,12 +132,12 @@ const CourseFeedback = () => {
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 <MessageSquare size={16} />
-                                Comentari General (Opcional)
+                                {t('course_feedback.comment_label')}
                             </label>
                             <textarea
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
-                                placeholder="Què és el que més t'ha agradat? Què milloraries?"
+                                placeholder={t('course_feedback.comment_placeholder')}
                                 className="w-full p-4 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400 text-slate-700 resize-none h-32"
                             />
                         </div>
@@ -145,9 +155,9 @@ const CourseFeedback = () => {
                             className={`h-12 text-lg font-bold shadow-lg shadow-indigo-500/30 bg-indigo-600 hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-wait' : 'hover:scale-[1.02]'
                                 }`}
                         >
-                            {loading ? 'Enviant...' : (
+                            {loading ? t('session_feedback.sending') : (
                                 <span className="flex items-center gap-2">
-                                    Enviar Valoració Final <Send size={18} />
+                                    {t('course_feedback.submit')} <Send size={18} />
                                 </span>
                             )}
                         </Button>
@@ -155,7 +165,7 @@ const CourseFeedback = () => {
 
                     <div className="text-center pt-4 border-t border-slate-100">
                         <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                            UGT EnForma
+                            {t('session_feedback.brand')}
                         </p>
                     </div>
                 </div>

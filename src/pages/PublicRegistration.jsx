@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { courseService } from '../services/courseService';
 import { studentService } from '../services/studentService';
@@ -8,7 +9,25 @@ import { Badge } from '../components/ui/Badge';
 import { Calendar, MapPin, CheckCircle, ArrowRight, ShieldCheck, Star, Lock, Users, Target, Clock, Info, Download, QrCode } from 'lucide-react';
 import QRCode from "react-qr-code";
 
+const renderDescription = (text) => {
+    if (!text) return null;
+    // Split by newlines first
+    return text.split('\n').map((line, i) => (
+        <span key={i}>
+            {/* Split by **bold** tags */}
+            {line.split(/(\*\*.*?\*\*)/).map((part, j) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={j} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+                }
+                return part;
+            })}
+            <br />
+        </span>
+    ));
+};
+
 const PublicRegistration = () => {
+    const { t, i18n } = useTranslation();
     const { courseId } = useParams();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -56,8 +75,12 @@ const PublicRegistration = () => {
         setRegistrationStatus('submitting');
 
         const formData = new FormData(e.target);
+
+        // Logic: If spots are available -> 'Inscrit' (Confirmed)
+        // If full and waitlist enabled -> 'registered' (Waitlist/Solicitant)
+        // If full and no waitlist -> Button should be disabled anyway, but failsafe to 'registered'
         const isFull = course.students >= course.maxCapacity && course.enrollmentType === 'limited';
-        const status = isFull && course.enableWaitlist ? "Llista d'espera" : "Pendent";
+        const status = isFull ? 'registered' : 'Inscrit'; // 'Inscrit' = Confirmed Enrolled
 
         // Collect custom fields
         const customFieldData = {};
@@ -108,9 +131,9 @@ const PublicRegistration = () => {
                         <div className="mx-auto w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 animate-bounce-slow">
                             <CheckCircle size={40} className="text-emerald-500" />
                         </div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-2 leading-tight">Inscripció Confirmada!</h2>
+                        <h2 className="text-3xl font-black text-slate-800 mb-2 leading-tight">{t('public_registration.title_confirmed')}</h2>
                         <p className="text-slate-600 mb-8 max-w-xs mx-auto text-sm leading-relaxed">
-                            Hem rebut les teves dades correctament. Rebràs un correu de confirmació en breu.
+                            {t('public_registration.message_confirmed')}
                         </p>
 
                         {/* Digital Ticket / QR Code */}
@@ -119,7 +142,7 @@ const PublicRegistration = () => {
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                         <QrCode size={12} />
-                                        Ticket Digital
+                                        {t('public_registration.digital_ticket')}
                                     </span>
                                 </div>
                                 <div className="bg-white p-4 rounded-xl shadow-sm inline-block">
@@ -133,7 +156,7 @@ const PublicRegistration = () => {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-4 font-medium uppercase tracking-wider">
-                                    Mostra aquest codi a l'entrada
+                                    {t('public_registration.show_code')}
                                 </p>
                             </div>
                         )}
@@ -144,7 +167,7 @@ const PublicRegistration = () => {
                                 className="bg-slate-900 text-white hover:bg-black font-bold py-4 rounded-xl shadow-lg hover:translate-y-px transition-all"
                                 onClick={() => window.location.reload()}
                             >
-                                Tornar a l'inici
+                                {t('public_registration.back_to_home')}
                             </Button>
                         </div>
                     </div>
@@ -162,7 +185,7 @@ const PublicRegistration = () => {
                         <span className="text-red-600 font-bold text-xs">UGT</span>
                     </div>
                 </div>
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">Carregant Curs...</p>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">{t('public_registration.loading_course')}</p>
             </div>
         </div>
     );
@@ -190,12 +213,12 @@ const PublicRegistration = () => {
                         <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-600 shadow-inner">
                             <Lock size={28} />
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900">Accés Protegit</h2>
+                        <h2 className="text-2xl font-black text-slate-900">{t('public_registration.access_protected')}</h2>
                         <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-2">{course?.name}</p>
                     </div>
                     <form onSubmit={handleVerifyPassword} className="space-y-8">
                         <div className="space-y-2 text-left">
-                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Contrasenya del Curs</label>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.course_password')}</label>
                             <input
                                 required
                                 type="password"
@@ -204,7 +227,7 @@ const PublicRegistration = () => {
                                 placeholder="••••••••"
                                 className={`w-full bg-slate-50/50 border-${passwordError ? 'red-200' : 'slate-200'} border rounded-xl focus:bg-white focus:border-red-500 px-5 py-4 outline-none transition-all text-center tracking-widest text-lg`}
                             />
-                            {passwordError && <p className="text-[10px] text-red-500 font-bold ml-1 flex items-center gap-1 justify-center"><span className="material-icons-outlined text-[10px]">error</span> Contrasenya incorrecta</p>}
+                            {passwordError && <p className="text-[10px] text-red-500 font-bold ml-1 flex items-center gap-1 justify-center"><span className="material-icons-outlined text-[10px]">error</span> {t('public_registration.password_error')}</p>}
                         </div>
 
                         {/* Centered Button */}
@@ -213,7 +236,7 @@ const PublicRegistration = () => {
                                 type="submit"
                                 className="px-8 bg-red-600 hover:bg-red-700 text-white py-3 text-sm font-bold uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
                             >
-                                Accedir al Formulari
+                                {t('public_registration.access_form')}
                             </Button>
                         </div>
                     </form>
@@ -222,7 +245,7 @@ const PublicRegistration = () => {
         );
     }
 
-    if (!course) return <div className="min-h-screen flex items-center justify-center p-20 text-center text-slate-400 font-bold uppercase tracking-widest">Enllaç no vàlid o curs no trobat.</div>;
+    if (!course) return <div className="min-h-screen flex items-center justify-center p-20 text-center text-slate-400 font-bold uppercase tracking-widest">{t('public_registration.invalid_link')}</div>;
 
     // Determine location display
     const locationDisplay = course.sessions && course.sessions.length > 0 && course.sessions[0].location
@@ -257,6 +280,21 @@ const PublicRegistration = () => {
                             <h1 className="text-sm md:text-base font-black text-slate-900 leading-none tracking-tight">UGT <span className="text-red-600">Formació</span></h1>
                         </div>
                     </div>
+                    {/* Language Switcher */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => i18n.changeLanguage('ca')}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${i18n.language === 'ca' ? 'bg-red-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                        >
+                            CA
+                        </button>
+                        <button
+                            onClick={() => i18n.changeLanguage('es')}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${i18n.language === 'es' ? 'bg-red-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                        >
+                            ES
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -286,7 +324,7 @@ const PublicRegistration = () => {
                                 </div>
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-md mb-2">
-                                {course.name}
+                                {i18n.language === 'es' && course.name_es ? course.name_es : course.name}
                             </h1>
                         </div>
                     </div>
@@ -298,7 +336,7 @@ const PublicRegistration = () => {
                                 <Calendar size={20} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">Dates</h4>
+                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">{t('public_registration.dates')}</h4>
                                 <p className="text-slate-600 font-medium">
                                     {formatDate(course.startDate)}
                                     {course.endDate && course.endDate !== course.startDate && (
@@ -312,7 +350,7 @@ const PublicRegistration = () => {
                                 <MapPin size={20} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">Ubicació</h4>
+                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">{t('public_registration.location')}</h4>
                                 <p className="text-slate-600 font-medium text-sm line-clamp-2">{locationDisplay}</p>
                             </div>
                         </div>
@@ -321,7 +359,7 @@ const PublicRegistration = () => {
                                 <Clock size={20} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">Horari</h4>
+                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">{t('public_registration.schedule')}</h4>
                                 <p className="text-slate-600 font-medium text-sm">{scheduleDisplay}</p>
                             </div>
                         </div>
@@ -330,9 +368,9 @@ const PublicRegistration = () => {
                                 <Target size={20} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">Sessions</h4>
+                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wide">{t('public_registration.sessions')}</h4>
                                 <p className="text-slate-600 font-medium text-sm">
-                                    {sessionsCount > 1 ? `${sessionsCount} Sessions Presencials` : 'Sessió Única Intensiva'}
+                                    {sessionsCount > 1 ? t('public_registration.sessions_count_many', { count: sessionsCount }) : t('public_registration.sessions_count_one')}
                                 </p>
                             </div>
                         </div>
@@ -342,10 +380,12 @@ const PublicRegistration = () => {
                     <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                         <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
                             <div className="w-1 h-8 bg-red-600 rounded-full"></div>
-                            Descripció del Curs
+                            {t('public_registration.description')}
                         </h3>
-                        <div className="prose prose-slate prose-lg max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
-                            {course.description || "Inscriu-te al programa de capacitació líder de la UGT Catalunya i transforma la teva carrera sindical amb eines pràctiques i coneixement expert."}
+                        <div className="prose prose-slate prose-lg max-w-none text-slate-600 leading-relaxed">
+                            {renderDescription(
+                                i18n.language === 'es' && course.description_es ? course.description_es : (course.description || t('public_registration.default_description'))
+                            )}
                         </div>
                     </div>
 
@@ -354,14 +394,14 @@ const PublicRegistration = () => {
                         <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
                                 <Calendar size={20} className="text-red-600" />
-                                Calendari de Sessions
+                                {t('public_registration.calendar_sessions')}
                             </h3>
                             <div className="space-y-3">
                                 {course.sessions.map((session, idx) => (
                                     <div key={idx} className="flex flex-col md:flex-row md:items-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-red-200 transition-colors">
                                         <div className="flex items-center gap-3 md:w-1/3 mb-2 md:mb-0">
                                             <Badge className="bg-white text-slate-700 border border-slate-200 shadow-sm font-bold">
-                                                SESSIÓ {idx + 1}
+                                                {t('public_registration.session_n', { n: idx + 1 })}
                                             </Badge>
                                             <span className="font-bold text-slate-900">
                                                 {new Date(session.date).toLocaleDateString('ca-ES', { day: 'numeric', month: 'long' })}
@@ -392,66 +432,66 @@ const PublicRegistration = () => {
                         {/* Form Header */}
                         <div className="bg-red-600 p-8 text-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-black opacity-10 rotate-12 scale-150 transform translate-x-1/2"></div>
-                            <h2 className="text-2xl font-black text-white relative z-10">Inscriu-te Ara</h2>
-                            <p className="text-white/80 text-sm mt-1 relative z-10 font-medium">Assegura la teva plaça en pocs segons</p>
+                            <h2 className="text-2xl font-black text-white relative z-10">{t('public_registration.register_now')}</h2>
+                            <p className="text-white/80 text-sm mt-1 relative z-10 font-medium">{t('public_registration.secure_spot')}</p>
                         </div>
 
                         <div className="p-8 space-y-6">
                             <form onSubmit={handleRegister} className="space-y-5">
                                 {/* Name Fields */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Nom i Cognoms *</label>
-                                    <input required name="firstName" type="text" placeholder="Nom" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium mb-3" />
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.name_surnames')} *</label>
+                                    <input required name="firstName" type="text" placeholder={t('public_registration.form.first_name')} className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium mb-3" />
                                     <div className="flex gap-3">
-                                        <input required name="surname1" type="text" placeholder="1r Cognom" className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
-                                        <input name="surname2" type="text" placeholder="2n Cognom" className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
+                                        <input required name="surname1" type="text" placeholder={t('public_registration.form.surname1')} className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
+                                        <input name="surname2" type="text" placeholder={t('public_registration.form.surname2')} className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
                                     </div>
                                 </div>
 
                                 {/* ID & Phone */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">DNI / NIE *</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.dni')} *</label>
                                         <input required name="dni" type="text" placeholder="00000000X" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Telèfon *</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.phone')} *</label>
                                         <input required name="phone" type="tel" placeholder="600 000 000" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
                                     </div>
                                 </div>
 
                                 {/* Email */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Email *</label>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.email')} *</label>
                                     <input required name="email" type="email" placeholder="correu@exemple.com" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
                                 </div>
 
                                 {/* Company & Federation */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Centre / Empresa *</label>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.company')} *</label>
                                     <input required name="company" type="text" placeholder="Centre de treball" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Federació (Sector) *</label>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.federation')} *</label>
                                     <select required name="federation" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all font-medium appearance-none text-sm">
-                                        <option value="">Selecciona...</option>
-                                        <option value="Serveis Públics">Serveis Públics</option>
-                                        <option value="Indústria">Indústria</option>
-                                        <option value="Serveis">Serveis</option>
+                                        <option value="">{t('public_registration.form.select_placeholder', 'Selecciona...')}</option>
+                                        <option value="Serveis Públics">{t('public_registration.form.federations.public_services')}</option>
+                                        <option value="Indústria">{t('public_registration.form.federations.industry')}</option>
+                                        <option value="Serveis">{t('public_registration.form.federations.services')}</option>
                                     </select>
                                 </div>
 
                                 {/* Affiliation Radio */}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Ets afiliat/da a la UGT? *</label>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('public_registration.form.is_affiliate')} *</label>
                                     <div className="flex gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer group">
                                             <input type="radio" name="affiliate" value="yes" className="accent-red-600 w-4 h-4" required />
-                                            <span className="text-sm font-semibold text-slate-700 group-hover:text-red-600 transition-colors">Sí</span>
+                                            <span className="text-sm font-semibold text-slate-700 group-hover:text-red-600 transition-colors">{t('public_registration.form.yes')}</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer group">
                                             <input type="radio" name="affiliate" value="no" className="accent-red-600 w-4 h-4" required />
-                                            <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">No</span>
+                                            <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">{t('public_registration.form.no')}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -500,7 +540,7 @@ const PublicRegistration = () => {
                                     <label className="flex items-start gap-3 cursor-pointer group">
                                         <input type="checkbox" required className="mt-1 accent-red-600 w-4 h-4 rounded border-slate-300" />
                                         <span className="text-xs text-slate-500 leading-snug group-hover:text-slate-700 transition-colors select-none">
-                                            Accepto la política de privacitat i autoritzo la UGT de Catalunya a tractar les meves dades.
+                                            {t('public_registration.form.privacy_policy')}
                                         </span>
                                     </label>
                                 </div>
@@ -523,8 +563,8 @@ const PublicRegistration = () => {
                                         </div>
                                     ) : (
                                         course.students >= course.maxCapacity && course.enrollmentType === 'limited' && course.enableWaitlist
-                                            ? "LLISTA D'ESPERA"
-                                            : "INSCRIURE'M"
+                                            ? t('public_registration.form.waitlist')
+                                            : t('public_registration.form.submit')
                                     )}
                                 </Button>
                             </form>
