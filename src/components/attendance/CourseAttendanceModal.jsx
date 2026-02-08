@@ -32,24 +32,60 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
     const [scanFeedback, setScanFeedback] = useState(null); // { type: 'success' | 'error' | 'warning', message: string, studentName?: string }
 
     useEffect(() => {
+        let unsubscribe = () => { };
+
         if (isOpen && course) {
-            loadStudents();
+            setLoading(true);
             setActiveTab('manual');
             setScanFeedback(null);
+
+            // Subscribe to real-time updates
+            try {
+                // The service returns the unsubscribe function directly (or a promise resolving to it if async, but onSnapshot is sync-ish return)
+                // My service implementation was synchronous return of onSnapshot.
+                const sub = studentService.subscribeToStudentsByCourse(course.id, (data) => {
+                    setStudents(data);
+                    setLoading(false);
+                });
+                if (sub) unsubscribe = sub;
+            } catch (error) {
+                console.error("Error subscribing to course students:", error);
+                setLoading(false);
+            }
         }
+
+        return () => {
+            unsubscribe();
+        };
     }, [isOpen, course]);
 
-    const loadStudents = async () => {
-        setLoading(true);
-        try {
-            const data = await studentService.getStudentsByCourse(course.id);
-            setStudents(data);
-        } catch (error) {
-            console.error("Error loading students for course:", error);
-        } finally {
-            setLoading(false);
-        }
+    // Helper: Determine the active session for "today"
+    const getActiveSession = () => {
+        if (!course?.sessions?.length) return null;
+        const today = new Date().toISOString().split('T')[0];
+        return course.sessions.find(s => s.date === today);
     };
+
+    // Helper: Calculate stats
+    const getStudentStats = (student) => {
+        const totalSessions = course?.sessions?.length || 1;
+        // Check new array 'attendanceSessions' OR legacy 'attended'
+        const legacyAttended = student.attended ? 1 : 0;
+        const sessionAttendedCount = student.attendanceSessions?.length || legacyAttended;
+        // Avoid double counting if legacy and array exist (though they shouldn't conflict much)
+        // If array exists, trust it. If not, trust legacy.
+        const count = student.attendanceSessions ? student.attendanceSessions.length : legacyAttended;
+
+        const percentage = Math.round((count / totalSessions) * 100);
+        const activeSession = getActiveSession();
+        const attendedToday = activeSession
+            ? student.attendanceSessions?.includes(activeSession.id)
+            : student.attended; // Fallback to legacy boolean if no sessions defined
+
+        return { count, percentage, attendedToday };
+    };
+
+    // loadStudents removed as it is replaced by subscription
 
     const playSound = (type) => {
         const context = new (window.AudioContext || window.webkitAudioContext)();
@@ -126,10 +162,43 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
         setTimeout(() => setScanFeedback(null), 3000);
     };
 
-    const toggleAttendance = (studentId, value) => {
-        setStudents(prev => prev.map(s =>
-            s.id === studentId ? { ...s, attended: value !== undefined ? value : !s.attended } : s
-        ));
+    const toggleAttendance = async (studentId) => {
+        const student = students.find(s => s.id === studentId);
+        const activeSession = getActiveSession();
+        const stats = getStudentStats(student);
+        const isAttending = !stats.attendedToday; // Toggle
+
+        // Optimistic UI Update
+        const updatedStudents = students.map(s => {
+            if (s.id === studentId) {
+                // Mock update for UI
+                let newSessions = s.attendanceSessions || [];
+                if (activeSession) {
+                    if (isAttending) newSessions = [...newSessions, activeSession.id];
+                    else newSessions = newSessions.filter(id => id !== activeSession.id);
+                }
+                return { ...s, attendanceSessions: newSessions, attended: isAttending };
+            }
+            return s;
+        });
+        setStudents(updatedStudents);
+
+        // Server Update
+        try {
+            if (activeSession) {
+                if (isAttending) {
+                    await studentService.markSessionAttendance(studentId, activeSession.id);
+                } else {
+                    await studentService.removeSessionAttendance(studentId, activeSession.id);
+                }
+            } else {
+                // Fallback for legacy courses without sessions
+                await studentService.updateStudent(studentId, { attended: isAttending });
+            }
+        } catch (error) {
+            console.error("Error updating attendance:", error);
+            // Revert on error? For now just log.
+        }
     };
 
     const handleSave = async () => {
@@ -206,24 +275,35 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alumne / Empresa</span>
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assistència</span>
                                     </div>
-                                    {students.map(student => (
-                                        <div
-                                            key={student.id}
-                                            className={`flex justify-between items-center p-4 rounded-2xl border transition-all ${student.attended ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}
-                                        >
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-900">{student.fullName || student.name || 'Alumne sense nom'}</p>
-                                                <p className="text-[11px] text-slate-500 font-medium">{student.company || 'Àrea no especificada'}</p>
-                                            </div>
-                                            <button
-                                                onClick={() => toggleAttendance(student.id)}
-                                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${student.attended ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                                                    }`}
+                                    {students.map(student => {
+                                        const stats = getStudentStats(student);
+                                        return (
+                                            <div
+                                                key={student.id}
+                                                className={`flex justify-between items-center p-4 rounded-2xl border transition-all ${stats.attendedToday ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}
                                             >
-                                                {student.attended ? <Check size={20} strokeWidth={3} /> : <X size={20} />}
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900">{student.fullName || student.name || 'Alumne sense nom'}</p>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                                                            {stats.percentage}% Assistència
+                                                        </span>
+                                                        {student.company && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 font-bold">{student.company}</span>}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => toggleAttendance(student.id)}
+                                                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${stats.attendedToday
+                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                                        }`}
+                                                    title={getActiveSession() ? "Marcar assistència per sessió d'avui" : "Marcar assistència general"}
+                                                >
+                                                    {stats.attendedToday ? <Check size={20} strokeWidth={3} /> : <X size={20} />}
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             )
                         )}
@@ -236,17 +316,17 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
                                     {/* Scan Feedback Overlay */}
                                     {scanFeedback && (
                                         <div className={`absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm z-20 rounded-xl animate-in fade-in zoom-in duration-200 border-4 ${scanFeedback.type === 'success' ? 'border-emerald-500' :
-                                                scanFeedback.type === 'warning' ? 'border-amber-500' : 'border-red-500'
+                                            scanFeedback.type === 'warning' ? 'border-amber-500' : 'border-red-500'
                                             }`}>
                                             <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${scanFeedback.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                                                    scanFeedback.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
+                                                scanFeedback.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
                                                 }`}>
                                                 {scanFeedback.type === 'success' && <Check size={40} strokeWidth={4} />}
                                                 {scanFeedback.type === 'warning' && <AlertCircle size={40} strokeWidth={3} />}
                                                 {scanFeedback.type === 'error' && <X size={40} strokeWidth={4} />}
                                             </div>
                                             <h3 className={`text-xl font-black mb-1 ${scanFeedback.type === 'success' ? 'text-emerald-700' :
-                                                    scanFeedback.type === 'warning' ? 'text-amber-700' : 'text-red-700'
+                                                scanFeedback.type === 'warning' ? 'text-amber-700' : 'text-red-700'
                                                 }`}>
                                                 {scanFeedback.type === 'success' ? 'ASSISTÈNCIA OK' :
                                                     scanFeedback.type === 'warning' ? 'JA REGISTRAT' : 'ERROR'}

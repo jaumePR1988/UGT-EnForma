@@ -7,6 +7,7 @@ const Sidebar = ({ currentView, onNavigate, toggleDarkMode }) => {
         { id: 'students', label: 'Alumnat', icon: 'people' },
         { id: 'certificates', label: 'Certificats', icon: 'assignment' },
         { id: 'reports', label: 'Informes', icon: 'analytics' },
+        { id: 'teachers', label: 'Docència', icon: 'co_present' }, // New Teacher Portal
         { id: 'calendar', label: 'Calendari', icon: 'calendar_month' }, // New
         { id: 'settings', label: 'Ajustes', icon: 'settings' },   // New
     ];

@@ -11,11 +11,14 @@ import CreateCourse from './pages/CreateCourse';
 import Students from './pages/Students';
 import Certificates from './pages/Certificates';
 import Reports from './pages/Reports';
+import TeacherPortal from './pages/TeacherPortal';
 import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
 import EnrollStudent from './pages/EnrollStudent';
 import PublicRegistration from './pages/PublicRegistration';
 import PublicAttendance from './pages/PublicAttendance';
+import SessionFeedback from './pages/public/SessionFeedback';
+import CourseFeedback from './pages/public/CourseFeedback';
 
 function App() {
   const navigate = useNavigate();
@@ -72,6 +75,7 @@ function App() {
       case 'enroll-student': navigate('/enroll-internal'); break;
       case 'certificates': navigate('/certificates'); break;
       case 'reports': navigate('/reports'); break;
+      case 'teachers': navigate('/teachers'); break;
       case 'calendar': navigate('/calendar'); break;
       case 'settings': navigate('/settings'); break;
       default: navigate('/dashboard');
@@ -100,6 +104,8 @@ function App() {
       navigate('/students');
     } catch (error) {
       console.error("Error adding student:", error);
+      alert(error.message);
+      throw error;
     }
   };
 
@@ -187,6 +193,12 @@ function App() {
           students={students}
         />
       } />
+      <Route path="/teachers" element={
+        <TeacherPortal
+          onNavigate={navigateTo}
+          toggleDarkMode={toggleDarkMode}
+        />
+      } />
       <Route path="/calendar" element={
         <Calendar
           onNavigate={navigateTo}
@@ -204,6 +216,8 @@ function App() {
       {/* Public Routes */}
       <Route path="/public/register/:courseId" element={<PublicRegistration />} />
       <Route path="/public/attendance/:courseId" element={<PublicAttendance />} />
+      <Route path="/public/feedback/session/:sessionId" element={<SessionFeedback />} />
+      <Route path="/public/feedback/course/:courseId" element={<CourseFeedback />} />
     </Routes>
   );
 }

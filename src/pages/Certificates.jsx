@@ -39,10 +39,40 @@ const Certificates = ({ onNavigate, toggleDarkMode, courses = [], students = [] 
             alert("Si us plau, selecciona una firma primer.");
             return;
         }
+
+        const stats = calculateAttendance(student, selectedCourseId);
+        if (!stats.eligible) {
+            const confirmForce = window.confirm(
+                `Aquest alumne té un ${stats.percentage}% d'assistència (Mínim: ${stats.minPercentage}%).\nVols generar el certificat igualment?`
+            );
+            if (!confirmForce) return;
+        }
+
         const course = availableCourses.find(c => c.id === selectedCourseId);
         if (student && course) {
             generateCertificate(student, course, selectedSignature);
         }
+    };
+
+    // Helper to calculate attendance (duplicated from CourseAttendanceModal for now to avoid large refactor)
+    const calculateAttendance = (student, courseId) => {
+        const course = availableCourses.find(c => c.id === courseId);
+        if (!course) return { count: 0, percentage: 0, eligible: false };
+
+        const totalSessions = course.sessions?.length || 1;
+        const legacyAttended = student.attended ? 1 : 0;
+        // If attendanceSessions exists, use its length. If not, use legacy boolean.
+        const count = student.attendanceSessions ? student.attendanceSessions.length : legacyAttended;
+
+        const percentage = Math.round((count / totalSessions) * 100);
+        const minPercentage = course.minAttendancePercentage || 80;
+
+        return {
+            count,
+            percentage,
+            eligible: percentage >= minPercentage,
+            minPercentage
+        };
     };
 
     return (
@@ -121,6 +151,7 @@ const Certificates = ({ onNavigate, toggleDarkMode, courses = [], students = [] 
                                                 <tr className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase">
                                                     <th className="px-6 py-3">Alumne</th>
                                                     <th className="px-6 py-3">DNI</th>
+                                                    <th className="px-6 py-3">Assistència</th>
                                                     <th className="px-6 py-3 text-right">Accions</th>
                                                 </tr>
                                             </thead>
@@ -133,19 +164,56 @@ const Certificates = ({ onNavigate, toggleDarkMode, courses = [], students = [] 
                                                         <td className="px-6 py-4 text-sm text-slate-500 font-mono">
                                                             {student.dni}
                                                         </td>
+                                                        <td className="px-6 py-4">
+                                                            {(() => {
+                                                                const stats = calculateAttendance(student, selectedCourseId);
+                                                                return (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`px-2 py-1 rounded-md text-xs font-bold ${stats.eligible
+                                                                            ? 'bg-green-100 text-green-700'
+                                                                            : 'bg-red-100 text-red-700'
+                                                                            }`}>
+                                                                            {stats.percentage}%
+                                                                        </span>
+                                                                        {!stats.eligible && (
+                                                                            <span className="text-[10px] text-slate-400">
+                                                                                (Mín. {stats.minPercentage}%)
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <button
-                                                                onClick={() => handleGeneratePDF(student)}
-                                                                className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${selectedSignature
-                                                                        ? 'bg-primary text-white hover:bg-red-700 shadow-sm'
-                                                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                                    }`}
-                                                                disabled={!selectedSignature}
-                                                                title={!selectedSignature ? "Selecciona una firma primer" : "Generar PDF"}
-                                                            >
-                                                                <span className="material-icons-outlined text-sm mr-1">download</span>
-                                                                PDF
-                                                            </button>
+                                                            {(() => {
+                                                                const stats = calculateAttendance(student, selectedCourseId);
+                                                                // Only disable if no signature. Allow override for attendance.
+                                                                const isDisabled = !selectedSignature;
+                                                                const isForce = !stats.eligible;
+
+                                                                let title = "Generar PDF";
+                                                                if (!selectedSignature) title = "Selecciona una firma primer";
+                                                                else if (isForce) title = `Forçar generació (${stats.percentage}% < ${stats.minPercentage}%)`;
+
+                                                                return (
+                                                                    <button
+                                                                        onClick={() => handleGeneratePDF(student)}
+                                                                        className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${isDisabled
+                                                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                                                            : isForce
+                                                                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
+                                                                                : 'bg-primary text-white hover:bg-red-700 shadow-sm'
+                                                                            }`}
+                                                                        disabled={isDisabled}
+                                                                        title={title}
+                                                                    >
+                                                                        <span className="material-icons-outlined text-sm mr-1">
+                                                                            {isForce ? 'warning' : 'download'}
+                                                                        </span>
+                                                                        {isForce ? 'Forçar PDF' : 'PDF'}
+                                                                    </button>
+                                                                );
+                                                            })()}
                                                         </td>
                                                     </tr>
                                                 ))}

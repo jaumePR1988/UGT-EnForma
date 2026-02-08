@@ -44,13 +44,8 @@ const PublicAttendance = () => {
             }
 
             // 2. Verify Student exists in this course
-            // Fetch all students for this course and find by DNI
-            // In a real app with many students, use a query.
-            // For now, client-side filter is okay for small sets, but better to query.
-            // We'll use getStudentsByCourse which we have, but it doesn't filter by DNI.
-            // Let's assume we fetch all and check.
-            const students = await studentService.getStudentsByCourse(courseId);
-            const student = students.find(s => s.dni?.toLowerCase() === dni.toLowerCase());
+            // Optimized verification
+            const student = await studentService.verifyStudentEnrollment(courseId, dni);
 
             if (!student) {
                 throw new Error("No s'ha trobat cap alumne amb aquest DNI inscrit en aquest curs.");
@@ -59,7 +54,22 @@ const PublicAttendance = () => {
             // 3. Mark Attendance (Mock)
             // Here we would call attendanceService.markPresent(courseId, student.id, date)
             // For now, we simulate success.
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // If student already attended today, maybe warn? But for now simple success.
+            // 3. Detect Active Session
+            let sessionId = 'legacy-session';
+
+            if (course.sessions && course.sessions.length > 0) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const activeSession = course.sessions.find(s => s.date === todayStr);
+
+                if (!activeSession) {
+                    throw new Error(`No hi ha cap sessió programada per avui (${new Date().toLocaleDateString()}).`);
+                }
+                sessionId = activeSession.id;
+            }
+
+            // 4. Mark Attendance
+            await studentService.markSessionAttendance(student.id, sessionId);
 
             setStatus('success');
 
@@ -119,7 +129,7 @@ const PublicAttendance = () => {
             {/* Header */}
             <div className="mb-8 text-center">
                 <div className="flex items-center justify-center gap-2 mb-4">
-                    <img src="/logo-ugt.png" alt="UGT" className="h-8 grayscale opacity-50" />
+                    <img src="/logo-ugt.png" alt="UGT" className="h-16 mb-2" />
                 </div>
                 <h1 className="text-xl font-bold text-slate-900 max-w-xs mx-auto leading-tight">{course.name}</h1>
                 <p className="text-sm text-slate-500 mt-2">Control d'Assistència</p>
@@ -133,7 +143,7 @@ const PublicAttendance = () => {
                             required
                             type="text"
                             value={dni}
-                            onChange={(e) => setDni(e.target.value)}
+                            onChange={(e) => setDni(e.target.value.toUpperCase())}
                             placeholder="00000000X"
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-bold text-center tracking-wider text-lg uppercase"
                         />

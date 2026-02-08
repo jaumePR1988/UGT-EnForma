@@ -96,10 +96,77 @@ export const courseService = {
      */
     async deleteCourse(id) {
         try {
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, 'courses', id));
         } catch (error) {
-            console.error("Error deleting course: ", error);
-            throw new Error("No s'ha pogut eliminar el curs.");
+            console.error("Error deleting course:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Recalculates the student count for a specific course based on actual 'students' collection data.
+     */
+    async recalculateCourseStudents(courseId) {
+        try {
+            const { collection, query, where, getCountFromServer, updateDoc, doc } = await import('firebase/firestore');
+            const q = query(collection(db, 'students'), where('courseId', '==', courseId));
+            const snapshot = await getCountFromServer(q);
+            const count = snapshot.data().count;
+
+            const courseRef = doc(db, 'courses', courseId);
+            await updateDoc(courseRef, {
+                students: count
+            });
+            return count;
+        } catch (error) {
+            console.error(`Error recalculating students for course ${courseId}:`, error);
+            return 0;
+        }
+    },
+
+    /**
+     * Syncs student counts for ALL courses.
+     * Heavy operation, should be used sparingly (e.g., via Settings).
+     */
+    async syncAllCourseCounts() {
+        try {
+            // 1. Get all courses
+            const courses = await this.getCourses();
+
+            // 2. Get all students (optimized: maybe just get metadata? for now get all is fine for small/medium DB)
+            // Ideally we use an aggregation query, but let's iterate for simplicity and reliability in client SDK
+            const { collection, getDocs } = await import('firebase/firestore');
+            const studentsSnap = await getDocs(collection(db, 'students'));
+            const students = studentsSnap.docs.map(d => d.data());
+
+            // 3. Count students per course
+            const counts = {};
+            students.forEach(s => {
+                if (s.courseId) {
+                    counts[s.courseId] = (counts[s.courseId] || 0) + 1;
+                }
+            });
+
+            // 4. Update courses where count differs
+            let updatedCount = 0;
+            const { doc, updateDoc } = await import('firebase/firestore');
+
+            const updatePromises = courses.map(async (course) => {
+                const actualCount = counts[course.id] || 0;
+                // Check if update is needed (assuming course.students is what we display)
+                if (course.students !== actualCount) {
+                    const courseRef = doc(db, 'courses', course.id);
+                    await updateDoc(courseRef, { students: actualCount });
+                    updatedCount++;
+                }
+            });
+
+            await Promise.all(updatePromises);
+            return { success: true, updatedCourses: updatedCount };
+
+        } catch (error) {
+            console.error("Error syncing course counts:", error);
+            throw error;
         }
     }
 };

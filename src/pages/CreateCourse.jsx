@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { courseService } from '../services/courseService';
 import { storageService } from '../services/storageService';
+import { instructorService } from '../services/instructorService';
 import Sidebar from '../components/layout/Sidebar';
 
 const SidebarStep = ({ number, title, isActive, isCompleted, onClick }) => {
@@ -48,9 +49,23 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
         customFields: [],
         enrollmentType: 'limited', // limited, unlimited, manual
         enableWaitlist: true,
-        registrationDeadline: ''
+        registrationDeadline: '',
+        minAttendancePercentage: 80 // Default 80%
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [instructors, setInstructors] = useState([]);
+
+    useEffect(() => {
+        const fetchInstructors = async () => {
+            try {
+                const data = await instructorService.getInstructors();
+                setInstructors(data);
+            } catch (error) {
+                console.error("Error fetching instructors:", error);
+            }
+        };
+        fetchInstructors();
+    }, []);
 
     const generateSlug = (text) => {
         if (!text) return 'nou-curs';
@@ -483,8 +498,40 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                                         </div>
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2" htmlFor="min_attendance">
+                                            Assistència Mínima per Certificat (%)
+                                        </label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3"
+                                                id="min_attendance"
+                                                name="minAttendancePercentage"
+                                                value={courseData.minAttendancePercentage || 80}
+                                                onChange={handleInputChange}
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                onFocus={() => setActiveSection(2)}
+                                            />
+                                            <span className="text-xl font-bold text-slate-400">%</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-1">El percentatge d'assistència necessari per obtenir el diploma automàticament.</p>
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2" htmlFor="professor">Professor/a</label>
-                                        <input className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3" id="professor" name="instructor" value={courseData.instructor} onChange={handleInputChange} placeholder="Nom del docent" type="text" onFocus={() => setActiveSection(2)} />
+                                        <select
+                                            className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3"
+                                            id="professor"
+                                            name="instructor"
+                                            value={courseData.instructor}
+                                            onChange={handleInputChange}
+                                            onFocus={() => setActiveSection(2)}
+                                        >
+                                            <option value="">Selecciona un docent</option>
+                                            {instructors.map(inst => (
+                                                <option key={inst.id} value={inst.name}>{inst.name}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div className={`space-y-4 ${!courseData.isMultiSession ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                                         <div className="flex items-center justify-between">
@@ -636,11 +683,17 @@ const CreateCourse = ({ onBack, toggleDarkMode, onNavigate, onSave, isEditMode =
                                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2" htmlFor="docent_principal">Docent Principal</label>
                                             <div className="relative">
                                                 <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">person</span>
-                                                <select className="w-full pl-10 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3" id="docent_principal">
+                                                <select
+                                                    className="w-full pl-10 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary transition-all p-3"
+                                                    id="docent_principal"
+                                                    name="instructor"
+                                                    value={courseData.instructor}
+                                                    onChange={handleInputChange}
+                                                >
                                                     <option value="">Selecciona un docent</option>
-                                                    <option>Jordi Garcia (Dret Laboral)</option>
-                                                    <option>Marta Vila (Igualtat)</option>
-                                                    <option>Pere Soler (Riscos Laborals)</option>
+                                                    {instructors.map(inst => (
+                                                        <option key={inst.id} value={inst.name}>{inst.name}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>

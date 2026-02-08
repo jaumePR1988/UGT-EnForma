@@ -78,14 +78,19 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEdi
 
         // Prepare object for list view (Student.jsx expects fullName, courseTitle, etc)
         const studentToSave = {
-            id: isEditMode ? studentId : undefined, // Include ID if editing
             fullName: formData.name,
             email: formData.email,
             dni: formData.dni,
             courseId: selectedCourse?.id,
             courseTitle: selectedCourse?.name,
+            isAffiliated: formData.affiliate === 'si',
             ...formData
         };
+
+        // Remove 'id' if undefined to avoid Firestore errors, add only if editing
+        if (isEditMode && studentId) {
+            studentToSave.id = studentId;
+        }
 
         if (onSave) {
             onSave(studentToSave);
@@ -267,7 +272,7 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEdi
                                         {field.type === 'textarea' ? (
                                             <textarea
                                                 name={field.id}
-                                                // value={formData[field.id] || ''} 
+                                                value={formData[field.id] || ''}
                                                 onChange={handleInputChange}
                                                 className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm p-3 min-h-[80px]"
                                                 required={field.required}
@@ -277,7 +282,7 @@ const EnrollStudent = ({ onNavigate, toggleDarkMode, courses = [], onSave, isEdi
                                             <input
                                                 type={field.type}
                                                 name={field.id}
-                                                // value={formData[field.id] || ''}
+                                                value={formData[field.id] || ''}
                                                 onChange={handleInputChange}
                                                 className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5"
                                                 required={field.required}

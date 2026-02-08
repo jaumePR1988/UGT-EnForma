@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/layout/Sidebar';
+import { feedbackService } from '../services/feedbackService';
 
 const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
     // Helper to get the Monday of the current week
@@ -10,7 +11,7 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
         return new Date(d.setDate(diff));
     };
 
-    const [currentWeekStart, setCurrentWeekStart] = React.useState(getStartOfWeek(new Date()));
+    const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
 
     const formatWeekRange = (startDate) => {
         const endOfWeek = new Date(startDate);
@@ -28,7 +29,24 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
 
     // --- Derived Data for Stats ---
     const pendingCertificates = 0; // Future feature
-    const averageRating = 'N/A';   // Future feature
+
+    // Feedback Stats State
+    const [averageRating, setAverageRating] = useState('0.0');
+    const [totalFeedbacks, setTotalFeedbacks] = useState(0);
+
+    useEffect(() => {
+        loadFeedbackStats();
+    }, []);
+
+    const loadFeedbackStats = async () => {
+        try {
+            const stats = await feedbackService.getGlobalRatingStats();
+            setAverageRating(stats.average);
+            setTotalFeedbacks(stats.count);
+        } catch (error) {
+            console.error("Error loading feedback stats:", error);
+        }
+    };
 
     // --- Recent Activity Logic ---
     const getRecentActivity = () => {
@@ -139,7 +157,7 @@ const Dashboard = ({ onNavigate, toggleDarkMode, courses, students = [] }) => {
                             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg">
                                 <span className="material-icons-outlined">star</span>
                             </div>
-                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{averageRating}</span>
+                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{totalFeedbacks} vots</span>
                         </div>
                         <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Valoració Mitjana</h3>
                         <p className="text-3xl font-bold mt-1 text-slate-800 dark:text-white">{averageRating}</p>
