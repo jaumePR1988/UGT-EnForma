@@ -62,8 +62,14 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
     // Helper: Determine the active session for "today"
     const getActiveSession = () => {
         if (!course?.sessions?.length) return null;
-        const today = new Date().toISOString().split('T')[0];
-        return course.sessions.find(s => s.date === today);
+        // Use local date string YYYY-MM-DD instead of UTC ISO string
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        return course.sessions.find(s => s.date === todayStr);
     };
 
     // Helper: Calculate stats
@@ -220,7 +226,7 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Gestió d'Assistència: ${course?.title}`}
+            title={`Gestió d'Assistència: ${course?.name}`}
             maxWidth="3xl"
             footer={
                 <div className="flex gap-2 justify-between w-full">
@@ -294,8 +300,8 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
                                                 <button
                                                     onClick={() => toggleAttendance(student.id)}
                                                     className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${stats.attendedToday
-                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
-                                                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                                                         }`}
                                                     title={getActiveSession() ? "Marcar assistència per sessió d'avui" : "Marcar assistència general"}
                                                 >

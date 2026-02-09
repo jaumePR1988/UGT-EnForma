@@ -110,8 +110,10 @@ export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                         <div className="flex justify-center text-blue-500 mb-1"><Users size={18} /></div>
-                        <p className="text-lg font-black text-slate-900">{course?.maxCapacity || 0}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Places</p>
+                        <p className="text-lg font-black text-slate-900">
+                            {Math.max(0, (course?.maxCapacity || 0) - (course?.students || 0))}
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Places disponibles</p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                         <div className="flex justify-center text-amber-500 mb-1"><Shield size={18} /></div>

@@ -35,7 +35,12 @@ const PublicAttendance = () => {
             if (sessionIdFromUrl && data.sessions) {
                 const targetSession = data.sessions.find(s => s.id === sessionIdFromUrl);
                 if (targetSession) {
-                    const todayStr = new Date().toISOString().split('T')[0];
+                    const todayNum = new Date();
+                    const y = todayNum.getFullYear();
+                    const m = String(todayNum.getMonth() + 1).padStart(2, '0');
+                    const d = String(todayNum.getDate()).padStart(2, '0');
+                    const todayStr = `${y}-${m}-${d}`;
+
                     if (targetSession.date !== todayStr) {
                         setSessionInfo(targetSession);
                         setShowWarning(true);
@@ -77,7 +82,12 @@ const PublicAttendance = () => {
 
             // If no sessionId in URL, find session for today as fallback
             if (!sessionId && course.sessions && course.sessions.length > 0) {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayNum = new Date();
+                const y = todayNum.getFullYear();
+                const m = String(todayNum.getMonth() + 1).padStart(2, '0');
+                const d = String(todayNum.getDate()).padStart(2, '0');
+                const todayStr = `${y}-${m}-${d}`;
+
                 const activeSession = course.sessions.find(s => s.date === todayStr);
 
                 if (!activeSession) {

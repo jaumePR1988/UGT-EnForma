@@ -54,7 +54,7 @@ export const Attendance = () => {
     };
 
     const filteredCourses = courses.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase())
+        (course.name || course.title || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -140,7 +140,7 @@ export const Attendance = () => {
                                         <tr key={course.id} className="table-row group">
                                             <td className="table-cell">
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-bold text-slate-800 dark:text-white leading-snug">{course.title}</span>
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-white leading-snug">{course.name || course.title}</span>
                                                     <span className="text-[10px] text-primary font-bold uppercase tracking-widest mt-0.5">#{course.id.substring(0, 8).toUpperCase()}</span>
                                                 </div>
                                             </td>

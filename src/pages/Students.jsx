@@ -83,7 +83,7 @@ const StudentDetailModal = ({ isOpen, onClose, student, attendanceStats }) => {
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
                             <div
                                 className={`h-2.5 rounded-full ${attendanceStats.percentage >= 80 ? 'bg-green-500' :
-                                        attendanceStats.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                    attendanceStats.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                                     }`}
                                 style={{ width: `${attendanceStats.percentage}%` }}
                             ></div>
@@ -380,7 +380,7 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
         let filterText = `Total Alumnes: ${filteredStudents.length}`;
         if (filters.courseId) {
             const course = courses.find(c => c.id === filters.courseId);
-            filterText += ` | Curs: ${course ? course.title : 'Desconegut'}`;
+            filterText += ` | Curs: ${course ? (course.name || course.title) : 'Desconegut'}`;
         }
         if (filters.status) filterText += ` | Estat: ${filters.status}`;
         if (filters.federation) filterText += ` | Federació: ${formatFederation(filters.federation, t)}`;
@@ -553,7 +553,7 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
                                 <option value="" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.filters.all_courses')}</option>
                                 {availableCourses.map(course => (
                                     <option key={course.id} value={course.id} className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">
-                                        {course.title}
+                                        {course.name || course.title}
                                     </option>
                                 ))}
                             </select>
@@ -712,16 +712,16 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
                                                     {stats && stats.total > 0 ? (
                                                         <div className="flex flex-col items-center">
                                                             <span className={`text-xs font-bold ${stats.percentage === 100 ? 'text-green-600' :
-                                                                    stats.percentage >= 80 ? 'text-emerald-500' :
-                                                                        stats.percentage >= 50 ? 'text-yellow-600' : 'text-red-500'
+                                                                stats.percentage >= 80 ? 'text-emerald-500' :
+                                                                    stats.percentage >= 50 ? 'text-yellow-600' : 'text-red-500'
                                                                 }`}>
                                                                 {stats.attended}/{stats.total} ({stats.percentage}%)
                                                             </span>
                                                             <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
                                                                 <div
                                                                     className={`h-full rounded-full transition-all duration-500 ${stats.percentage === 100 ? 'bg-green-500' :
-                                                                            stats.percentage >= 80 ? 'bg-emerald-400' :
-                                                                                stats.percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                                                                        stats.percentage >= 80 ? 'bg-emerald-400' :
+                                                                            stats.percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'
                                                                         }`}
                                                                     style={{ width: `${stats.percentage}%` }}
                                                                 />

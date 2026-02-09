@@ -77,7 +77,12 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
         setSelectedCourse(course);
 
         // Find if there is a session today to pass it to the QR
-        const todayStr = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
         const todaySession = course.sessions?.find(s => s.date === todayStr);
         setSelectedSession(todaySession || null);
 
@@ -89,10 +94,15 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
         if (!course.sessions || course.sessions.length === 0) return null;
 
         const sortedSessions = [...course.sessions].sort((a, b) => new Date(a.date) - new Date(b.date));
-        const today = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD' in most environments, but let's be safe
+        const todayNum = new Date();
+        const yNum = todayNum.getFullYear();
+        const mNum = String(todayNum.getMonth() + 1).padStart(2, '0');
+        const dNum = String(todayNum.getDate()).padStart(2, '0');
+        const manualTodayStr = `${yNum}-${mNum}-${dNum}`;
 
         // Find first session today or in future
-        const next = sortedSessions.find(s => s.date >= today);
+        const next = sortedSessions.find(s => s.date >= manualTodayStr);
         return next || sortedSessions[sortedSessions.length - 1]; // Return last if all finished
     };
 
