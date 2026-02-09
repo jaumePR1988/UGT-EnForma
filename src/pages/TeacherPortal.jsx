@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/layout/Sidebar';
+import { AttendanceQR } from '../components/attendance/AttendanceQR';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { courseService } from '../services/courseService';
@@ -22,7 +23,7 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
 
     // QR Modal State
     const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [qrUrl, setQrUrl] = useState('');
+    const [selectedSession, setSelectedSession] = useState(null);
 
     // Sessions Manager Modal State
     const [sessionsModalOpen, setSessionsModalOpen] = useState(false);
@@ -74,14 +75,12 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
 
     const handleOpenQR = (course) => {
         setSelectedCourse(course);
-        // Generate a signed public URL (mock token)
-        const token = btoa(JSON.stringify({ c: course.id, t: Date.now() })); // Simple mock token
-        const url = `${window.location.origin}/public/enroll/${course.id}?t=${token}`; // Using enroll/attendance public endpoint
-        // Wait, public/attendance is for checking in. Let's assume there is a specific route or use the existing one.
-        // PublicAttendance.jsx uses /public/attendance/:courseId
-        // So:
-        const checkInUrl = `${window.location.origin}/public/attendance/${course.id}?t=${token}`;
-        setQrUrl(checkInUrl);
+
+        // Find if there is a session today to pass it to the QR
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todaySession = course.sessions?.find(s => s.date === todayStr);
+        setSelectedSession(todaySession || null);
+
         setQrModalOpen(true);
     };
 
@@ -290,56 +289,14 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
                 />
             )}
 
-            {/* QR Modal (Simple) */}
-            {qrModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-card-dark w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 text-center">
-                            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-                                Escaneja per confirmar assistència
-                            </h3>
-                            <p className="text-sm text-slate-500 mb-6">
-                                {selectedCourse?.name}
-                            </p>
-
-                            <div className="bg-white p-4 rounded-xl border-2 border-slate-100 inline-block mb-6 shadow-sm">
-                                <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrl)}&color=000000&bgcolor=ffffff`}
-                                    alt="QR Code"
-                                    className="w-64 h-64 object-contain"
-                                />
-                            </div>
-
-                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg flex items-center gap-2 text-left mb-6">
-                                <code className="text-[10px] text-slate-500 truncate flex-1 font-mono bg-transparent border-none p-0">
-                                    {qrUrl}
-                                </code>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(qrUrl);
-                                        // Simple feedback
-                                        const btn = document.getElementById('copy-btn');
-                                        if (btn) btn.innerText = 'Copiat!';
-                                        setTimeout(() => { if (btn) btn.innerText = 'Copiar'; }, 2000);
-                                    }}
-                                    id="copy-btn"
-                                    className="text-xs font-bold text-blue-600 hover:text-blue-700 px-2"
-                                >
-                                    Copiar
-                                </button>
-                            </div>
-
-                            <Button
-                                variant="primary"
-                                fullWidth
-                                onClick={() => setQrModalOpen(false)}
-                                className="bg-slate-900 text-white hover:bg-black"
-                            >
-                                Tancar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+            {/* Premium QR Attendance Modal */}
+            {selectedCourse && (
+                <AttendanceQR
+                    isOpen={qrModalOpen}
+                    onClose={() => setQrModalOpen(false)}
+                    course={selectedCourse}
+                    session={selectedSession}
+                />
             )}
 
             {/* Course Sessions Manager Modal */}

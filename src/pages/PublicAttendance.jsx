@@ -1,6 +1,10 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle, MapPin, Clock, ShieldCheck, AlertCircle, Calendar, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Modal } from '../components/ui/Modal';
+import { courseService } from '../services/courseService';
+import { studentService } from '../services/studentService';
 
 const PublicAttendance = () => {
     const { courseId } = useParams();

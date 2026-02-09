@@ -5,6 +5,7 @@ import { RefreshCw, Smartphone, CheckCircle, Users, Clock, Shield } from 'lucide
 import QRCode from "react-qr-code";
 
 export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
+    if (!course) return null;
     const [qrValue, setQrValue] = useState("");
     const [scannedCount, setScannedCount] = useState(0);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minuts
@@ -70,7 +71,7 @@ export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
             <div className="flex flex-col items-center gap-8 py-4">
                 {/* QR HEADER DISPLAY */}
                 <div className="text-center">
-                    <h3 className="text-2xl font-black text-slate-900 mb-2">{course?.title}</h3>
+                    <h3 className="text-2xl font-black text-slate-900 mb-2">{course?.name}</h3>
                     <p className="text-sm text-slate-500 font-medium">Escaneja amb el teu telèfon per confirmar la teva presència</p>
                 </div>
 
@@ -109,8 +110,8 @@ export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                         <div className="flex justify-center text-blue-500 mb-1"><Users size={18} /></div>
-                        <p className="text-lg font-black text-slate-900">{course?.students || 0}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Inscrits</p>
+                        <p className="text-lg font-black text-slate-900">{course?.maxCapacity || 0}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Places</p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                         <div className="flex justify-center text-amber-500 mb-1"><Shield size={18} /></div>
