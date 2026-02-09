@@ -4,6 +4,7 @@ import { CheckCircle, MapPin, Clock, ShieldCheck, AlertCircle, Calendar, AlertTr
 import confetti from 'canvas-confetti';
 import { Modal } from '../components/ui/Modal';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { courseService } from '../services/courseService';
 import { studentService } from '../services/studentService';
 
