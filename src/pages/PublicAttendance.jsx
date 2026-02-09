@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle, MapPin, Clock, ShieldCheck, AlertCircle, Calendar, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Modal } from '../components/ui/Modal';
+import { Card } from '../components/ui/Card';
 import { courseService } from '../services/courseService';
 import { studentService } from '../services/studentService';
 
