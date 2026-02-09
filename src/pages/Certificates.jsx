@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import Sidebar from '../components/layout/Sidebar';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import SignatureManager from '../components/certificates/SignatureManager';
-import { generateCertificate } from '../utils/CertificateGenerator';
+import { generateCertificate, generateMassCertificates } from '../utils/CertificateGenerator';
 import { studentService } from '../services/studentService';
+import { Modal } from '../components/ui/Modal';
 
 const Certificates = ({ onNavigate, courses = [], students = [] }) => {
     const { t } = useTranslation();
@@ -12,6 +13,13 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
     const [selectedSignature, setSelectedSignature] = useState(null);
     const [courseStudents, setCourseStudents] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
+
+    // Mass Selection State
+    const [selectedStudents, setSelectedStudents] = useState([]);
+
+    // History State
+    const [certificateLogs, setCertificateLogs] = useState([]);
 
     // Modal State
     const [confirmConfig, setConfirmConfig] = useState({
@@ -23,6 +31,20 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
         confirmText: t('common.accept') || 'D\'acord',
         cancelText: t('common.cancel') || 'Cancel·lar'
     });
+
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+        confirmText: '',
+        cancelText: ''
+    });
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+    };
 
     const closeConfirm = () => {
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
@@ -59,8 +81,21 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
         closeModal();
     };
 
-    // 1. Identify courses that are finished (or all active courses for now)
-    const availableCourses = courses || [];
+    // Filter courses based on 'showArchived'
+    const availableCourses = (courses || []).filter(c => {
+        if (showArchived) return true;
+        return c.status !== 'Finalitzat';
+    });
+
+    // Load logs on mount
+    useEffect(() => {
+        loadLogs();
+    }, []);
+
+    const loadLogs = async () => {
+        const logs = await studentService.getCertificateLogs();
+        setCertificateLogs(logs);
+    };
 
     // Load students when a course is selected
     useEffect(() => {
@@ -71,6 +106,7 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                     const studentsData = await studentService.getStudentsByCourse(selectedCourseId);
                     // Filter only those who "Passed" (active/registered for now)
                     setCourseStudents(studentsData);
+                    setSelectedStudents([]); // Reset selection
                 } catch (error) {
                     console.error("Error loading students for certificate:", error);
                 } finally {
@@ -78,81 +114,99 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                 }
             } else {
                 setCourseStudents([]);
+                setSelectedStudents([]);
             }
         };
         fetchStudents();
     }, [selectedCourseId]);
 
-    const handleGeneratePDF = async (student) => {
+    // Selection Handlers
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedStudents(courseStudents.map(s => s.id));
+        } else {
+            setSelectedStudents([]);
+        }
+    };
+
+    const handleSelectStudent = (studentId) => {
+        setSelectedStudents(prev => {
+            if (prev.includes(studentId)) {
+                return prev.filter(id => id !== studentId);
+            } else {
+                return [...prev, studentId];
+            }
+        });
+    };
+
+    // Common Logic to Prepare Data for Generation
+    const prepareGenerationData = async () => {
         if (!selectedSignature) {
             showConfirm({
                 title: t('certificates.modal.missing_signature_title') || 'Falta la firma',
                 message: t('certificates.modal.missing_signature_message') || 'Si us plau, selecciona una firma abans de generar el certificat.',
                 type: 'info'
             });
-            return;
+            return null;
         }
+
+        const course = availableCourses.find(c => c.id === selectedCourseId);
+        if (!course) return null;
+
+        // 1. Calculate Total Hours
+        let totalHours = course.duration || course.totalHours || 0;
+        if (!totalHours && course.sessions && course.sessions.length > 0) {
+            totalHours = course.sessions.reduce((acc, session) => {
+                if (session.startTime && session.endTime) {
+                    const [startH, startM] = session.startTime.split(':').map(Number);
+                    const [endH, endM] = session.endTime.split(':').map(Number);
+                    const startVal = startH + (startM / 60);
+                    const endVal = endH + (endM / 60);
+                    const duration = endVal - startVal;
+                    return acc + (duration > 0 ? duration : 0);
+                }
+                return acc;
+            }, 0);
+            totalHours = Math.round(totalHours * 100) / 100;
+        }
+
+        const courseWithHours = { ...course, computedTotalHours: totalHours };
+
+        // 2. Pre-load Signature
+        let signatureToUse = { ...selectedSignature };
+        if (selectedSignature.url && !selectedSignature.dataUrl) {
+            try {
+                setLoading(true);
+                const dataUrl = await getDataUrl(selectedSignature.url);
+                signatureToUse.dataUrl = dataUrl;
+            } catch (error) {
+                console.error("Error loading signature image", error);
+                showModal({
+                    title: 'Error',
+                    message: t('certificates.pdf_button.error_signature'),
+                    type: 'error'
+                });
+                setLoading(false);
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        return { courseWithHours, signatureToUse };
+    };
+
+    // Single Generation
+    const handleGeneratePDF = async (student) => {
+        const data = await prepareGenerationData();
+        if (!data) return;
+        const { courseWithHours, signatureToUse } = data;
 
         const stats = calculateAttendance(student, selectedCourseId);
 
-        const proceedWithGeneration = async () => {
-            const course = availableCourses.find(c => c.id === selectedCourseId);
-
-            // 1. Calculate Total Hours if not present
-            let totalHours = course.duration || course.totalHours || 0;
-            if (!totalHours && course.sessions && course.sessions.length > 0) {
-                totalHours = course.sessions.reduce((acc, session) => {
-                    if (session.startTime && session.endTime) {
-                        const [startH, startM] = session.startTime.split(':').map(Number);
-                        const [endH, endM] = session.endTime.split(':').map(Number);
-                        const startVal = startH + (startM / 60);
-                        const endVal = endH + (endM / 60);
-                        const duration = endVal - startVal;
-                        return acc + (duration > 0 ? duration : 0);
-                    }
-                    return acc;
-                }, 0);
-                // Round to 1 decimal place if needed, or keep as float
-                totalHours = Math.round(totalHours * 100) / 100;
-            }
-
-            // 2. Pre-load Signature as Data URL to ensure it appears in PDF
-            let signatureToUse = { ...selectedSignature };
-            if (selectedSignature.url && !selectedSignature.dataUrl) {
-                try {
-                    setLoading(true);
-                    const dataUrl = await getDataUrl(selectedSignature.url);
-                    signatureToUse.dataUrl = dataUrl;
-                } catch (error) {
-                    console.error("Error loading signature image", error);
-                    showModal({
-                        title: 'Error',
-                        message: t('certificates.pdf_button.error_signature'),
-                        type: 'error'
-                    });
-                    setLoading(false); // Ensure loading is stopped
-                    return;
-                } finally {
-                    setLoading(false);
-                }
-            }
-
-            if (student && course) {
-                // Pass the calculated totalHours override
-                const courseWithHours = { ...course, computedTotalHours: totalHours };
-                generateCertificate(student, courseWithHours, signatureToUse);
-
-                // NEW: Mark as generated in DB
-                try {
-                    await studentService.setCertificateGenerated(student.id);
-                    // Update local state to reflect change immediately (optional if live reload is fast enough, but good UX)
-                    setCourseStudents(prev => prev.map(s =>
-                        s.id === student.id ? { ...s, certificateGenerated: true } : s
-                    ));
-                } catch (e) {
-                    console.error("Failed to mark certificate as generated", e);
-                }
-            }
+        const proceed = async () => {
+            generateCertificate(student, courseWithHours, signatureToUse);
+            await logGeneration(student, courseWithHours, signatureToUse);
         };
 
         if (!stats.eligible) {
@@ -160,40 +214,122 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                 title: t('certificates.modal.low_attendance_title') || 'Assistència Insuficient',
                 message: t('certificates.pdf_button.warning_attendance', { percentage: stats.percentage, min: stats.minPercentage }),
                 type: 'warning',
-                onConfirm: proceedWithGeneration,
+                onConfirm: proceed,
                 confirmText: t('certificates.modal.force_generate') || 'Generar igualment',
                 cancelText: t('common.cancel')
             });
         } else {
-            await proceedWithGeneration();
+            await proceed();
+        }
+    };
+
+    // Mass Generation
+    const handleGenerateSelected = async () => {
+        if (selectedStudents.length === 0) return;
+
+        const data = await prepareGenerationData();
+        if (!data) return;
+        const { courseWithHours, signatureToUse } = data;
+
+        const studentsToGenerate = courseStudents.filter(s => selectedStudents.includes(s.id));
+
+        // Check if any have low attendance
+        const lowAttendanceStudents = studentsToGenerate.filter(s => !calculateAttendance(s, selectedCourseId).eligible);
+
+        const proceed = async () => {
+            // Generate ONE PDF with multiple pages
+            generateMassCertificates(studentsToGenerate, courseWithHours, signatureToUse);
+
+            // Log for all
+            for (const s of studentsToGenerate) {
+                await logGeneration(s, courseWithHours, signatureToUse);
+            }
+            // Clear selection
+            setSelectedStudents([]);
+        };
+
+        if (lowAttendanceStudents.length > 0) {
+            showModal({
+                title: 'Atenció: Alumnes sense assistència mínima',
+                message: `Hi ha ${lowAttendanceStudents.length} alumnes seleccionats que no compleixen el mínim d'assistència. Vols generar els certificats igualment?`,
+                type: 'warning',
+                onConfirm: proceed,
+                confirmText: 'Generar igualment',
+                cancelText: 'Cancel·lar'
+            });
+        } else {
+            await proceed();
+        }
+    };
+
+    const logGeneration = async (student, course, signature) => {
+        try {
+            await studentService.setCertificateGenerated(student.id);
+            await studentService.logCertificate({
+                studentName: student.fullName,
+                courseName: course.name || course.title,
+                signatureUsed: signature.signerName || signature.name,
+                generatedBy: 'Admin' // TODO: Get real user
+            });
+            // Update local state
+            setCourseStudents(prev => prev.map(s =>
+                s.id === student.id ? { ...s, certificateGenerated: true } : s
+            ));
+            loadLogs(); // Refresh logs
+        } catch (e) {
+            console.error("Failed to log generation", e);
         }
     };
 
     // Helper to convert URL to Data URL
-    // Helper to convert URL to Data URL
+    // Helper to convert URL to Data URL with retry logic
     const getDataUrl = async (url) => {
-        try {
-            // Use proxy in development to avoid CORS
-            let fetchUrl = url;
-            if (import.meta.env.DEV) {
-                fetchUrl = url.replace('https://firebasestorage.googleapis.com', '/firebase-storage');
-                // Double encode %2F to %252F to survive proxy decoding
-                fetchUrl = fetchUrl.replace(/%2F/g, '%252F');
+        // Helper to fetch with specific options
+        const fetchImage = async (fetchUrl, options = {}) => {
+            try {
+                const response = await fetch(fetchUrl, options);
+                if (!response.ok) throw new Error(`Status: ${response.status} ${response.statusText}`);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                // Propagate error to be caught by strategy runner
+                throw error;
             }
+        };
 
-            const response = await fetch(fetchUrl);
-            if (!response.ok) throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        // Strategy 1: Proxy with Double Encoding (Best for some dev environments)
+        if (import.meta.env.DEV) {
+            try {
+                console.log("Strategy 1: Proxy Double Encoded");
+                let proxyUrl = url.replace('https://firebasestorage.googleapis.com', '/firebase-storage');
+                proxyUrl = proxyUrl.replace(/%2F/g, '%252F');
+                return await fetchImage(proxyUrl);
+            } catch (e1) {
+                console.warn("Strategy 1 failed:", e1.message);
+                try {
+                    console.log("Strategy 2: Proxy Single Encoded");
+                    let proxyUrl = url.replace('https://firebasestorage.googleapis.com', '/firebase-storage');
+                    return await fetchImage(proxyUrl);
+                } catch (e2) {
+                    console.warn("Strategy 2 failed:", e2.message);
+                    // Fallthrough to direct
+                }
+            }
+        }
 
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.error("Error loading image for PDF:", error);
-            throw error;
+        // Strategy 3: Direct (Production / Fallback)
+        try {
+            console.log("Strategy 3: Direct Fetch (CORS Mode)");
+            // Explicitly request CORS to ensure browser handles it right
+            return await fetchImage(url, { mode: 'cors', credentials: 'omit' });
+        } catch (e3) {
+            console.error("All signature fetch strategies failed.", e3);
+            throw e3;
         }
     };
 
@@ -242,15 +378,30 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                                     {t('certificates.select_course')}
                                 </h3>
                                 <select
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/50"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/50 mb-3"
                                     value={selectedCourseId}
                                     onChange={(e) => setSelectedCourseId(e.target.value)}
                                 >
                                     <option value="">{t('certificates.select_course_placeholder')}</option>
                                     {availableCourses.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                        <option key={c.id} value={c.id}>
+                                            {c.name} {c.status === 'Finalitzat' ? '(Arxivat)' : ''}
+                                        </option>
                                     ))}
                                 </select>
+
+                                <div className="flex items-center mb-1">
+                                    <input
+                                        type="checkbox"
+                                        id="showArchived"
+                                        checked={showArchived}
+                                        onChange={(e) => setShowArchived(e.target.checked)}
+                                        className="rounded border-slate-300 text-primary focus:ring-primary mr-2"
+                                    />
+                                    <label htmlFor="showArchived" className="text-xs text-slate-600 cursor-pointer select-none">
+                                        Veure cursos arxivats
+                                    </label>
+                                </div>
                                 <p className="text-xs text-slate-500 mt-2">
                                     {t('certificates.select_course_help')}
                                 </p>
@@ -268,9 +419,20 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                                         <span className="material-icons-outlined mr-2 text-primary">people</span>
                                         {t('certificates.student_list')}
                                     </h3>
-                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">
-                                        {t('certificates.students_count', { count: courseStudents.length })}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">
+                                            {t('certificates.students_count', { count: courseStudents.length })}
+                                        </span>
+                                        {selectedStudents.length > 0 && (
+                                            <button
+                                                onClick={handleGenerateSelected}
+                                                className="bg-primary hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm"
+                                            >
+                                                <span className="material-icons-outlined text-sm mr-1">file_download</span>
+                                                Generar ({selectedStudents.length})
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {loading ? (
@@ -292,6 +454,14 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                                         <table className="w-full text-left">
                                             <thead>
                                                 <tr className="bg-slate-50 text-xs text-slate-500 uppercase">
+                                                    <th className="px-6 py-3 w-10">
+                                                        <input
+                                                            type="checkbox"
+                                                            onChange={handleSelectAll}
+                                                            checked={courseStudents.length > 0 && selectedStudents.length === courseStudents.length}
+                                                            className="rounded border-slate-300 text-primary focus:ring-primary"
+                                                        />
+                                                    </th>
                                                     <th className="px-6 py-3">{t('certificates.table.student')}</th>
                                                     <th className="px-6 py-3">{t('certificates.table.dni')}</th>
                                                     <th className="px-6 py-3">{t('certificates.table.attendance')}</th>
@@ -301,6 +471,14 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                                             <tbody className="divide-y divide-slate-100">
                                                 {courseStudents.map(student => (
                                                     <tr key={student.id} className="hover:bg-slate-50">
+                                                        <td className="px-6 py-4">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedStudents.includes(student.id)}
+                                                                onChange={() => handleSelectStudent(student.id)}
+                                                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                                                            />
+                                                        </td>
                                                         <td className="px-6 py-4 font-medium text-slate-700">
                                                             {student.fullName}
                                                         </td>
@@ -381,63 +559,39 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                         </div>
                         <div className="bg-card-light rounded-xl border border-slate-200 shadow-sm">
                             <div className="divide-y divide-slate-100">
-                                <div className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-2 bg-green-50 text-green-600 rounded-full">
-                                            <span className="material-icons-outlined text-xl leading-none">task_alt</span>
+                                {certificateLogs && certificateLogs.length > 0 ? certificateLogs.map(log => (
+                                    <div key={log.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="p-2 bg-green-50 text-green-600 rounded-full">
+                                                <span className="material-icons-outlined text-xl leading-none">task_alt</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-800">{log.courseName}</p>
+                                                <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
+                                                    <span className="material-icons-outlined text-[12px] mr-1">person</span> {log.studentName}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800">Dret Laboral i Sindicalització</p>
-                                            <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
-                                                <span className="material-icons-outlined text-[12px] mr-1">mail</span> 14 {t('certificates.history.sent_success')}
+                                        <div className="text-right">
+                                            <p className="text-xs font-medium text-slate-600">
+                                                {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() : 'Avui'}
                                             </p>
+                                            <p className="text-[10px] text-slate-400">{log.signatureUsed}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-medium text-slate-600">Avui, 09:45</p>
-                                        <button className="text-xs text-primary font-semibold hover:underline mt-1">{t('certificates.history.details')}</button>
+                                )) : (
+                                    <div className="p-8 text-center text-slate-400 text-sm">
+                                        No hi ha registres recents.
                                     </div>
-                                </div>
-                                <div className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-2 bg-green-50 text-green-600 rounded-full">
-                                            <span className="material-icons-outlined text-xl leading-none">task_alt</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800">Igualtat a l'Empresa</p>
-                                            <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
-                                                <span className="material-icons-outlined text-[12px] mr-1">mail</span> 22 {t('certificates.history.sent_success')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-medium text-slate-600">Ahir, 16:30</p>
-                                        <button className="text-xs text-primary font-semibold hover:underline mt-1">{t('certificates.history.details')}</button>
-                                    </div>
-                                </div>
-                                <div className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-2 bg-orange-50 text-orange-600 rounded-full">
-                                            <span className="material-icons-outlined text-xl leading-none">warning</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800">Riscos Laborals Avançat</p>
-                                            <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
-                                                <span className="material-icons-outlined text-[12px] mr-1">mail</span> {t('certificates.history.sent_partial', { sent: 8, total: 10, errors: 2 })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-medium text-slate-600">10 Juny, 11:20</p>
-                                        <button className="text-xs text-primary font-semibold hover:underline mt-1 text-orange-600">{t('certificates.history.retry')}</button>
-                                    </div>
-                                </div>
+                                )}
                             </div>
-                            <div className="p-3 bg-slate-50 text-center border-t border-slate-200">
-                                <button className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center justify-center w-full">
-                                    {t('certificates.history.load_more')} <span className="material-icons-outlined text-xs ml-1">expand_more</span>
-                                </button>
-                            </div>
+                            {certificateLogs.length >= 50 && (
+                                <div className="p-3 bg-slate-50 text-center border-t border-slate-200">
+                                    <button className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center justify-center w-full">
+                                        {t('certificates.history.load_more')} <span className="material-icons-outlined text-xs ml-1">expand_more</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -460,6 +614,35 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                 confirmText={confirmConfig.confirmText}
                 cancelText={confirmConfig.cancelText}
             />
+
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+                footer={
+                    <div className="flex gap-2">
+                        <button onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+                            {modalConfig.cancelText}
+                        </button>
+                        {/* Only show confirm button if onConfirm is present */}
+                        {modalConfig.onConfirm && (
+                            <button
+                                onClick={handleConfirmModal}
+                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm ${modalConfig.type === 'warning' ? 'bg-amber-500 hover:bg-amber-600' :
+                                    modalConfig.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                                        'bg-primary hover:bg-blue-700'
+                                    }`}
+                            >
+                                {modalConfig.confirmText}
+                            </button>
+                        )}
+                    </div>
+                }
+            >
+                <div className="p-4 text-slate-600">
+                    {modalConfig.message}
+                </div>
+            </Modal>
         </div>
     );
 };

@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { RefreshCw, Smartphone, CheckCircle, Users, Clock, Shield } from 'lucide-react';
 import QRCode from "react-qr-code";
 
-export const AttendanceQR = ({ isOpen, onClose, course }) => {
+export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
     const [qrValue, setQrValue] = useState("");
     const [scannedCount, setScannedCount] = useState(0);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minuts
@@ -12,11 +12,11 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
 
     useEffect(() => {
         if (isOpen && course) {
-            generateNewQR();
+            generateNewQR(session); // Use session prop if available
             const timer = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        generateNewQR();
+                        generateNewQR(session);
                         return 300;
                     }
                     return prev - 1;
@@ -26,13 +26,22 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
         }
     }, [isOpen, course]);
 
-    const generateNewQR = () => {
+    const generateNewQR = (specificSession = null) => {
         setIsRotating(true);
         // Simulem generació d'un token d'assistència signat
         const token = btoa(`${course.id}-${Date.now()}-${Math.random()}`);
         // Ensure the URL is absolute for scanning
         const baseUrl = window.location.origin;
-        setQrValue(`${baseUrl}/public/attendance/${course.id}?t=${token}`);
+
+        let url = `${baseUrl}/public/attendance/${course.id}?t=${token}`;
+
+        // Add session ID if provided or if we can detect it from context
+        const sessionId = specificSession?.id;
+        if (sessionId) {
+            url += `&sid=${sessionId}`;
+        }
+
+        setQrValue(url);
         setTimeLeft(300);
         setTimeout(() => setIsRotating(false), 500);
     };
@@ -82,7 +91,7 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
                             </div>
                         </div>
                         <button
-                            onClick={generateNewQR}
+                            onClick={() => generateNewQR(session)}
                             className="mt-6 flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-ugt-red transition-colors uppercase tracking-widest"
                         >
                             <RefreshCw size={14} className={isRotating ? 'animate-spin' : ''} />
@@ -113,9 +122,16 @@ export const AttendanceQR = ({ isOpen, onClose, course }) => {
                 {/* INSTRUCTIONS */}
                 <div className="flex gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
                     <Smartphone size={24} className="text-blue-600 shrink-0" />
-                    <p className="text-[11px] text-blue-800 leading-relaxed">
-                        <span className="font-bold">Important:</span> El codi s'actualitza cada 5 minuts per evitar fraus. Només és vàlid si s'escaneja presencialment a l'aula.
-                    </p>
+                    <div>
+                        <p className="text-[11px] text-blue-800 leading-relaxed">
+                            <span className="font-bold">Important:</span> El codi s'actualitza cada 5 minuts per evitar fraus. Només és vàlid si s'escaneja presencialment a l'aula.
+                        </p>
+                        {session && (
+                            <p className="text-[10px] text-blue-600 mt-1 font-bold italic">
+                                S'està registrant l'assistència per a la sessió del {new Date(session.date).toLocaleDateString()}.
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
         </Modal>

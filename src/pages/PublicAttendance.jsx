@@ -1,21 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { courseService } from '../services/courseService';
-import { studentService } from '../services/studentService';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { CheckCircle, MapPin, Clock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { CheckCircle, MapPin, Clock, ShieldCheck, AlertCircle, Calendar, AlertTriangle } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { Modal } from '../components/ui/Modal';
 
 const PublicAttendance = () => {
     const { courseId } = useParams();
     const [searchParams] = useSearchParams();
     const token = searchParams.get('t');
+    const sessionIdFromUrl = searchParams.get('sid');
 
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dni, setDni] = useState('');
     const [status, setStatus] = useState('idle'); // idle, submitting, success, error
     const [errorMessage, setErrorMessage] = useState('');
+    const [showWarning, setShowWarning] = useState(false);
+    const [sessionInfo, setSessionInfo] = useState(null);
 
     useEffect(() => {
         loadCourse();
@@ -25,6 +24,18 @@ const PublicAttendance = () => {
         try {
             const data = await courseService.getCourseById(courseId);
             setCourse(data);
+
+            // Check if sid matches a session and if it's today
+            if (sessionIdFromUrl && data.sessions) {
+                const targetSession = data.sessions.find(s => s.id === sessionIdFromUrl);
+                if (targetSession) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    if (targetSession.date !== todayStr) {
+                        setSessionInfo(targetSession);
+                        setShowWarning(true);
+                    }
+                }
+            }
         } catch (error) {
             console.error("Error loading course", error);
         } finally {
@@ -56,22 +67,34 @@ const PublicAttendance = () => {
             // For now, we simulate success.
             // If student already attended today, maybe warn? But for now simple success.
             // 3. Detect Active Session
-            let sessionId = 'legacy-session';
+            let sessionId = sessionIdFromUrl;
 
-            if (course.sessions && course.sessions.length > 0) {
+            // If no sessionId in URL, find session for today as fallback
+            if (!sessionId && course.sessions && course.sessions.length > 0) {
                 const todayStr = new Date().toISOString().split('T')[0];
                 const activeSession = course.sessions.find(s => s.date === todayStr);
 
                 if (!activeSession) {
-                    throw new Error(`No hi ha cap sessió programada per avui (${new Date().toLocaleDateString()}).`);
+                    throw new Error(`No hi ha cap sessió programada per avui (${new Date().toLocaleDateString()}) i el QR no especifica cap sessió.`);
                 }
                 sessionId = activeSession.id;
+            } else if (!sessionId) {
+                // Extreme fallback for legacy or no-sessions courses
+                sessionId = 'legacy-session';
             }
 
             // 4. Mark Attendance
             await studentService.markSessionAttendance(student.id, sessionId);
 
             setStatus('success');
+
+            // Celebration!
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
+            });
 
         } catch (error) {
             console.error("Attendance error:", error);
@@ -171,6 +194,55 @@ const PublicAttendance = () => {
                     <span>Sistema segur de control biomètric</span>
                 </div>
             </Card>
+
+            {/* Premium Warning Modal */}
+            <Modal
+                isOpen={showWarning}
+                onClose={() => setShowWarning(false)}
+                title="Atenció: Sessió Diferent"
+            >
+                <div className="flex flex-col items-center text-center p-4">
+                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                        <AlertTriangle size={40} className="text-amber-600 dark:text-amber-400" />
+                    </div>
+
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">
+                        Aquesta sessió no és per avui
+                    </h3>
+
+                    <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed max-w-xs">
+                        Estàs intentant registrar l'assistència per a una sessió programada pel dia <span className="font-bold text-slate-900 dark:text-white">{sessionInfo ? new Date(sessionInfo.date).toLocaleDateString('ca-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : '---'}</span>.
+                    </p>
+
+                    <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 p-6 mb-8">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sessió Detalls</span>
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">Data Diferent</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-xl shadow-sm flex items-center justify-center text-slate-400">
+                                <Calendar size={24} />
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-900 dark:text-white line-clamp-1">{course?.name}</p>
+                                <p className="text-xs text-slate-500">{sessionInfo?.startTime} - {sessionInfo?.endTime}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col w-full gap-3">
+                        <Button
+                            variant="primary"
+                            fullWidth
+                            onClick={() => setShowWarning(false)}
+                            className="bg-amber-600 hover:bg-amber-700 text-white font-black py-4 shadow-lg shadow-amber-200 dark:shadow-none"
+                        >
+                            ENTÈS, CONTINUAR
+                        </Button>
+                        <p className="text-[10px] text-slate-400 font-medium">Si t'has equivocat de QR, demana al docent el codi correcte.</p>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

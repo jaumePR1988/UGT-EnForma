@@ -23,6 +23,19 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) 
         }
     };
 
+    const handleFinishCourse = async (courseId) => {
+        if (window.confirm("Estàs segur que vols finalitzar aquest curs? Això marcarà el curs com a 'Finalitzat'.")) {
+            try {
+                await courseService.updateCourse(courseId, { status: 'Finalitzat' });
+                if (refreshCourses) {
+                    await refreshCourses();
+                }
+            } catch (error) {
+                alert("Error finalitzant el curs: " + error.message);
+            }
+        }
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
             <Sidebar currentView="active-courses" onNavigate={onNavigate} toggleDarkMode={toggleDarkMode} />
@@ -187,27 +200,38 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) 
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => copyLink(course.id)}
-                                                        className="text-slate-400 hover:text-blue-600 transition-colors mr-3"
-                                                        title="Copiar enllaç públic"
-                                                    >
-                                                        <span className="material-icons-outlined text-[20px]">share</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => onNavigate(`edit-course/${course.id}`)}
-                                                        className="text-slate-400 hover:text-primary transition-colors mr-3"
-                                                        title="Editar curs"
-                                                    >
-                                                        <span className="material-icons-outlined text-[20px]">edit</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(course.id)}
-                                                        className="text-slate-400 hover:text-red-600 transition-colors"
-                                                        title="Eliminar curs"
-                                                    >
-                                                        <span className="material-icons-outlined text-[20px]">delete</span>
-                                                    </button>
+                                                    <div className="flex justify-end items-center space-x-2">
+                                                        <button
+                                                            className="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                                                            title="Editar Curs"
+                                                            onClick={() => onNavigate(`edit-course/${course.id}`)}
+                                                        >
+                                                            <span className="material-icons-outlined text-[20px]">edit</span>
+                                                        </button>
+                                                        <button
+                                                            className="p-2 text-slate-400 hover:text-blue-600 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                                                            title="Copiar enllaç d'inscripció"
+                                                            onClick={() => copyLink(course.id)}
+                                                        >
+                                                            <span className="material-icons-outlined text-[20px]">link</span>
+                                                        </button>
+                                                        {course.status !== 'Finalitzat' && (
+                                                            <button
+                                                                className="p-2 text-slate-400 hover:text-green-600 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                                                                title="Finalitzar Curs"
+                                                                onClick={() => handleFinishCourse(course.id)}
+                                                            >
+                                                                <span className="material-icons-outlined text-[20px]">task_alt</span>
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            className="p-2 text-slate-400 hover:text-red-600 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                                                            title="Eliminar Curs"
+                                                            onClick={() => handleDelete(course.id)}
+                                                        >
+                                                            <span className="material-icons-outlined text-[20px]">delete</span>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

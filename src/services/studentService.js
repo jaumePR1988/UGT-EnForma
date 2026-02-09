@@ -279,12 +279,10 @@ export const studentService = {
             console.error("Error subscribing to students:", error);
         });
 
-
-
     },
 
     /**
-     * Mark certificate as generated for a student
+     * Set certificate generated flag
      */
     async setCertificateGenerated(studentId) {
         try {
@@ -293,10 +291,45 @@ export const studentService = {
                 certificateGenerated: true,
                 certificateGeneratedAt: serverTimestamp()
             });
-            return true;
         } catch (error) {
-            console.error("Error in setCertificateGenerated:", error);
+            console.error("Error setting certificate generated:", error);
             throw error;
+        }
+    },
+
+    /**
+     * Log certificate generation event
+     */
+    async logCertificate(logData) {
+        try {
+            await addDoc(collection(db, 'certificateLogs'), {
+                ...logData,
+                createdAt: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error logging certificate:", error);
+            // Don't throw, logging failure shouldn't block user flow
+        }
+    },
+
+    /**
+     * Get certificate logs
+     */
+    async getCertificateLogs(limitCount = 50) {
+        try {
+            const q = query(
+                collection(db, 'certificateLogs'),
+                orderBy('createdAt', 'desc')
+            );
+            // Limit is tricky with recent firebase SDKs sometimes, but let's try basic query
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })).slice(0, limitCount);
+        } catch (error) {
+            console.error("Error getting certificate logs:", error);
+            return [];
         }
     },
 

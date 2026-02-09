@@ -1,16 +1,7 @@
 import jsPDF from 'jspdf';
 
-export const generateCertificate = (student, course, signature) => {
-    // Create landscape A4 PDF
-    const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-    });
-
-    const width = doc.internal.pageSize.getWidth();
-    const height = doc.internal.pageSize.getHeight();
-
+// Helper to draw a single certificate page
+const drawCertificatePage = (doc, student, course, signature, width, height) => {
     // --- Background/Decorations ---
     // Elegant border
     doc.setDrawColor(200, 200, 200); // Light gray
@@ -28,17 +19,11 @@ export const generateCertificate = (student, course, signature) => {
     // --- Header ---
     // Load UGT Logo
     try {
-        // Assuming logo is in public folder. jsPDF needs standard <img> element or base64.
-        // In browser env, we can use an Image object.
         const logoImg = new Image();
         logoImg.src = "/logo-ugt.png";
-        // We need to wait for load or assume it caches fast. 
-        // Sync capability of addImage with path only works if safe to do so or previously loaded.
-        // For reliability in this async context, we'll try adding it directly.
         doc.addImage(logoImg, "PNG", width / 2 - 25, 20, 50, 25);
     } catch (e) {
         console.error("Logo load error", e);
-        // Fallback text
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(204, 0, 0);
@@ -74,7 +59,6 @@ export const generateCertificate = (student, course, signature) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(24);
     doc.setTextColor(204, 0, 0); // UGT Red
-    // Split long course names
     const splitTitle = doc.splitTextToSize(course.name || "NOM DEL CURS", 180);
     doc.text(splitTitle, width / 2, 135, { align: 'center' });
 
@@ -90,14 +74,10 @@ export const generateCertificate = (student, course, signature) => {
         detailsText = `Realitzat del ${start} al ${end}`;
     }
 
-    // Add Total Hours
-    // Prioritize computedTotalHours passed from Certificates.jsx, then course.duration
     const hours = course.computedTotalHours || course.duration || course.totalHours || 0;
-
     if (hours > 0) {
         detailsText += ` amb una durada total de ${hours} hores.`;
     }
-    // Removed fallback text as requested
 
     doc.text(detailsText, width / 2, 150, { align: 'center' });
 
@@ -111,10 +91,9 @@ export const generateCertificate = (student, course, signature) => {
     const signatureY = 160;
     const signatureX = width - 80;
 
-    if (signature && (signature.url || signature.dataUrl)) {
+    if (signature && (signature.dataUrl || signature.url)) {
         try {
-            // Integrate transparent signature
-            doc.addImage(signature.url || signature.dataUrl, 'PNG', signatureX, signatureY - 10, 50, 25);
+            doc.addImage(signature.dataUrl || signature.url, 'PNG', signatureX - 15, signatureY - 15, 80, 40);
         } catch (e) {
             console.error("Error adding signature image to PDF", e);
             doc.text("(Firma Digital)", signatureX + 25, signatureY + 10, { align: 'center' });
@@ -133,8 +112,43 @@ export const generateCertificate = (student, course, signature) => {
         doc.line(signatureX, signatureY + 15, signatureX + 50, signatureY + 15);
         doc.text("Signatura Autoritzada", signatureX + 25, signatureY + 25, { align: 'center' });
     }
+};
 
-    // --- Save ---
+export const generateCertificate = (student, course, signature) => {
+    // Create landscape A4 PDF
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const width = doc.internal.pageSize.getWidth();
+    const height = doc.internal.pageSize.getHeight();
+
+    drawCertificatePage(doc, student, course, signature, width, height);
+
     const fileName = `Certificat_${(student.fullName || 'alumne').replace(/\s+/g, '_')}.pdf`;
+    doc.save(fileName);
+};
+
+export const generateMassCertificates = (students, course, signature) => {
+    // Create landscape A4 PDF for MASS generation
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const width = doc.internal.pageSize.getWidth();
+    const height = doc.internal.pageSize.getHeight();
+
+    students.forEach((student, index) => {
+        if (index > 0) {
+            doc.addPage();
+        }
+        drawCertificatePage(doc, student, course, signature, width, height);
+    });
+
+    const fileName = `Certificats_Massius_${(course.name || 'curs').replace(/\s+/g, '_')}.pdf`;
     doc.save(fileName);
 };

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/layout/Sidebar';
+import { useTranslation } from 'react-i18next';
 
 const Calendar = ({ onNavigate, toggleDarkMode, courses = [] }) => {
+    const { t } = useTranslation();
     const [currentDate, setCurrentDate] = useState(new Date());
 
     // Helper to help parsing DD/MM/YYYY dates from courses

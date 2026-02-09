@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { storageService } from '../../services/storageService';
 import { Modal } from '../ui/Modal';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ const SignatureManager = ({ onSelectSignature }) => {
     const [selectedId, setSelectedId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showUploadForm, setShowUploadForm] = useState(false);
+    const [editingId, setEditingId] = useState(null); // Track which signature is being edited
     const [newSigData, setNewSigData] = useState({ name: '', role: '', file: null });
 
     // Modal State
@@ -63,9 +64,11 @@ const SignatureManager = ({ onSelectSignature }) => {
         }
     };
 
-    const handleUpload = async (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
-        if (!newSigData.file || !newSigData.name || !newSigData.role) {
+
+        // Validation: Name and Role are always required. File is required only for NEW signatures.
+        if (!newSigData.name || !newSigData.role || (!editingId && !newSigData.file)) {
             showModal({
                 title: t('common.error'),
                 message: t('certificates.modal.missing_fields') || "Si us plau, completa tots els camps i selecciona un fitxer.",
@@ -76,40 +79,84 @@ const SignatureManager = ({ onSelectSignature }) => {
 
         setIsUploading(true);
         try {
-            // 1. Upload to Storage
-            const path = `signatures/${Date.now()}_${newSigData.file.name}`;
-            const downloadUrl = await storageService.uploadFile(newSigData.file, path);
+            let downloadUrl = null;
 
-            // 2. Add to Firestore
-            const newSig = {
-                signerName: newSigData.name,
-                signerRole: newSigData.role,
-                fileName: newSigData.file.name,
-                url: downloadUrl,
-                createdAt: serverTimestamp()
-            };
+            // 1. Upload new file if selected
+            if (newSigData.file) {
+                const path = `signatures/${Date.now()}_${newSigData.file.name}`;
+                downloadUrl = await storageService.uploadFile(newSigData.file, path);
+            }
 
-            const docRef = await addDoc(collection(db, 'signatures'), newSig);
+            if (editingId) {
+                // UPDATE existing
+                const updateData = {
+                    signerName: newSigData.name,
+                    signerRole: newSigData.role,
+                    updatedAt: serverTimestamp()
+                };
+                if (downloadUrl) {
+                    updateData.url = downloadUrl;
+                    updateData.fileName = newSigData.file.name;
+                }
 
-            // Auto-select
-            const savedSig = { id: docRef.id, ...newSig };
-            setSelectedId(docRef.id);
-            if (onSelectSignature) onSelectSignature(savedSig);
+                await updateDoc(doc(db, 'signatures', editingId), updateData);
+
+                // If the edited signature was selected, re-select to update parent
+                if (selectedId === editingId && onSelectSignature) {
+                    const updatedSig = signatures.find(s => s.id === editingId); // fetches old state, but close enough for ID
+                    // Ideally we'd pass the new data, but parent mostly cares about ID or basic info.
+                    // Let's pass the merged data to be safe
+                    onSelectSignature({ id: editingId, ...updateData, url: downloadUrl || updatedSig?.url });
+                }
+
+            } else {
+                // CREATE new
+                const newSig = {
+                    signerName: newSigData.name,
+                    signerRole: newSigData.role,
+                    fileName: newSigData.file.name,
+                    url: downloadUrl,
+                    createdAt: serverTimestamp()
+                };
+
+                const docRef = await addDoc(collection(db, 'signatures'), newSig);
+
+                // Auto-select
+                const savedSig = { id: docRef.id, ...newSig };
+                setSelectedId(docRef.id);
+                if (onSelectSignature) onSelectSignature(savedSig);
+            }
 
             // Reset form
-            setNewSigData({ name: '', role: '', file: null });
-            setShowUploadForm(false);
+            resetForm();
 
         } catch (error) {
-            console.error("Error uploading signature:", error);
+            console.error("Error saving signature:", error);
             showModal({
                 title: t('common.error'),
-                message: t('certificates.modal.upload_error') || "Error al pujar la firma.",
+                message: t('certificates.modal.upload_error') || "Error al guardar la firma.",
                 type: 'error'
             });
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleEdit = (sig, e) => {
+        e.stopPropagation();
+        setEditingId(sig.id);
+        setNewSigData({
+            name: sig.signerName || sig.name || '',
+            role: sig.signerRole || '',
+            file: null // Don't pre-fill file input, show current image indicator instead if needed
+        });
+        setShowUploadForm(true);
+    };
+
+    const resetForm = () => {
+        setNewSigData({ name: '', role: '', file: null });
+        setEditingId(null);
+        setShowUploadForm(false);
     };
 
     const handleSelect = (sig) => {
@@ -158,7 +205,12 @@ const SignatureManager = ({ onSelectSignature }) => {
             {/* Upload Modal / Form */}
             {showUploadForm && (
                 <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in">
-                    <form onSubmit={handleUpload} className="space-y-3">
+                    <form onSubmit={handleSave} className="space-y-3">
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                                {editingId ? 'Editar Firma' : 'Nova Firma'}
+                            </h4>
+                        </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Nom del Signant</label>
                             <input
@@ -180,7 +232,9 @@ const SignatureManager = ({ onSelectSignature }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Imatge de la Firma (PNG)</label>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">
+                                {editingId ? "Actualitzar Imatge (Opcional)" : "Imatge de la Firma (PNG)"}
+                            </label>
                             <input
                                 type="file"
                                 accept="image/png,image/jpeg"
@@ -191,7 +245,7 @@ const SignatureManager = ({ onSelectSignature }) => {
                         <div className="flex justify-end gap-2 pt-2">
                             <button
                                 type="button"
-                                onClick={() => setShowUploadForm(false)}
+                                onClick={resetForm}
                                 className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded"
                             >
                                 Cancel·lar
@@ -202,7 +256,7 @@ const SignatureManager = ({ onSelectSignature }) => {
                                 className="px-3 py-1.5 text-xs font-bold text-white bg-primary hover:bg-red-700 rounded flex items-center"
                             >
                                 {isUploading && <span className="material-icons-outlined animate-spin text-sm mr-2">refresh</span>}
-                                Guardar Firma
+                                {editingId ? 'Actualitzar' : 'Guardar Firma'}
                             </button>
                         </div>
                     </form>
@@ -215,15 +269,15 @@ const SignatureManager = ({ onSelectSignature }) => {
                     <div
                         key={sig.id}
                         onClick={() => handleSelect(sig)}
-                        className={`relative border rounded-lg p-3 cursor-pointer transition-all flex items-center space-x-3 ${selectedId === sig.id
+                        className={`relative border rounded-lg p-3 cursor-pointer transition-all flex items-center space-x-3 group ${selectedId === sig.id
                             ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary'
                             : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                             }`}
                     >
                         <div className="w-12 h-12 bg-white rounded border border-slate-100 flex items-center justify-center shrink-0">
-                            <img src={sig.url} alt="Firma" className="max-h-full max-w-full object-contain p-1" />
+                            <img src={sig.url} alt="Firma" className="max-h-full max-w-full object-contain p-1" crossOrigin="anonymous" />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-16">
                             <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{sig.signerName || sig.name}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{sig.signerRole}</p>
                         </div>
@@ -234,13 +288,22 @@ const SignatureManager = ({ onSelectSignature }) => {
                             </div>
                         )}
 
-                        <button
-                            onClick={(e) => handleDelete(sig.id, e)}
-                            className="absolute bottom-2 right-2 text-slate-300 hover:text-red-500 transition-colors"
-                            title="Eliminar"
-                        >
-                            <span className="material-icons-outlined text-lg">delete</span>
-                        </button>
+                        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-slate-900/80 rounded backdrop-blur-sm">
+                            <button
+                                onClick={(e) => handleEdit(sig, e)}
+                                className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                                title="Editar"
+                            >
+                                <span className="material-icons-outlined text-lg">edit</span>
+                            </button>
+                            <button
+                                onClick={(e) => handleDelete(sig.id, e)}
+                                className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                title="Eliminar"
+                            >
+                                <span className="material-icons-outlined text-lg">delete</span>
+                            </button>
+                        </div>
                     </div>
                 ))}
 

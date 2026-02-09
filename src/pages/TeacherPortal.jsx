@@ -153,13 +153,20 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
 
                                 return (
                                     <div key={course.id} className="relative flex flex-col h-full bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-hidden group">
-                                        <div className={`absolute top-0 left-0 w-full h-1 ${'bg-blue-500'}`}></div>
+                                        <div className={`absolute top-0 left-0 w-full h-1 ${isToday ? 'bg-red-500' : 'bg-blue-500'}`}></div>
                                         <div className="p-6 flex-1 flex flex-col">
                                             <div className="flex justify-between items-start mb-4">
-                                                <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg ${course.status === 'En curs' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
-                                                    }`}>
-                                                    {course.status || 'Programat'}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg w-fit ${course.status === 'En curs' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {course.status || 'Programat'}
+                                                    </span>
+                                                    {course.sessions && (
+                                                        <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter">
+                                                            Sessió: {course.sessions.filter(s => s.date < new Date().toISOString().split('T')[0]).length}/{course.sessions.length}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <span className="text-xs font-mono text-slate-400">{course.code}</span>
                                             </div>
 
@@ -168,11 +175,12 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
                                             </h3>
 
                                             <div className="space-y-3 mt-auto pt-4">
-                                                <div className={`flex items-start gap-3 text-sm p-3 rounded-xl transition-colors ${isToday ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-800/50 border border-transparent'}`}>
-                                                    <Calendar size={18} className={`mt-0.5 ${isToday ? 'text-blue-600' : 'text-slate-400'}`} />
+                                                <div className={`flex items-start gap-3 text-sm p-3 rounded-xl transition-colors ${isToday ? 'bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-800/50 border border-transparent'}`}>
+                                                    <Calendar size={18} className={`mt-0.5 ${isToday ? 'text-red-600' : 'text-slate-400'}`} />
                                                     <div>
-                                                        <p className={`font-bold text-sm ${isToday ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                        <p className={`font-bold text-sm ${isToday ? 'text-red-700 dark:text-red-300' : 'text-slate-700 dark:text-slate-300'}`}>
                                                             {nextSession ? new Date(nextSession.date).toLocaleDateString('ca-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : 'Sense dates'}
+                                                            {isToday && <span className="ml-2 bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded uppercase">Avui</span>}
                                                         </p>
                                                         {nextSession && (
                                                             <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
@@ -184,7 +192,7 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
                                                 </div>
 
                                                 {nextSession?.location && (
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500 px-2">
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500 px-2 text-right">
                                                         <MapPin size={14} className="text-slate-400" />
                                                         <span className="truncate">{nextSession.location}</span>
                                                     </div>
@@ -193,24 +201,42 @@ const TeacherPortal = ({ onNavigate, toggleDarkMode }) => {
                                         </div>
 
                                         <div className="p-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900/30">
-                                            <Button
-                                                variant="outline"
-                                                className="col-span-2 w-full flex items-center justify-center gap-2 text-xs font-bold border-slate-200 hover:bg-white hover:border-slate-300 transition-all h-9 mb-1"
-                                                onClick={() => {
-                                                    setSelectedCourse(course);
-                                                    setSessionsModalOpen(true);
-                                                }}
-                                            >
-                                                <List size={16} />
-                                                Gestionar Sessions i QRs
-                                            </Button>
+                                            {isToday ? (
+                                                <Button
+                                                    className="col-span-2 w-full flex items-center justify-center gap-2 text-xs font-black bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg hover:shadow-red-200 dark:hover:shadow-none h-11 mb-1 animate-pulse"
+                                                    onClick={() => handleOpenQR(course)}
+                                                >
+                                                    <QrCode size={18} />
+                                                    QR ASSISTÈNCIA D'AVUI
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    className="col-span-2 w-full flex items-center justify-center gap-2 text-xs font-bold border-slate-200 hover:bg-white hover:border-slate-300 transition-all h-9 mb-1"
+                                                    onClick={() => {
+                                                        setSelectedCourse(course);
+                                                        setSessionsModalOpen(true);
+                                                    }}
+                                                >
+                                                    <List size={16} />
+                                                    Gestionar Sessions i QRs
+                                                </Button>
+                                            )}
+
                                             <Button
                                                 variant="outline"
                                                 className="w-full flex items-center justify-center gap-2 text-xs font-bold border-slate-200 hover:bg-white hover:border-slate-300 transition-all h-9"
-                                                onClick={() => handleOpenQR(course)}
+                                                onClick={() => {
+                                                    if (isToday) {
+                                                        setSelectedCourse(course);
+                                                        setSessionsModalOpen(true);
+                                                    } else {
+                                                        handleOpenQR(course);
+                                                    }
+                                                }}
                                             >
-                                                <QrCode size={16} />
-                                                QR Ràpid
+                                                {isToday ? <List size={16} /> : <QrCode size={16} />}
+                                                {isToday ? 'Programació' : 'QR Ràpid'}
                                             </Button>
                                             <Button
                                                 className="w-full flex items-center justify-center gap-2 text-xs font-bold bg-slate-900 text-white hover:bg-black transition-all shadow-md hover:shadow-lg h-9"
