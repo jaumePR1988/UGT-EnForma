@@ -1,24 +1,32 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const Sidebar = ({ currentView, onNavigate }) => {
     const { t, i18n } = useTranslation();
+    const { isAdmin, isTeacher } = useAuth();
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'ca' ? 'es' : 'ca';
         i18n.changeLanguage(newLang);
     };
 
-    const navItems = [
-        { id: 'dashboard', label: t('sidebar.dashboard', 'Tauler de Control'), icon: 'dashboard' },
-        { id: 'active-courses', label: t('sidebar.active_courses', 'Cursos Actius'), icon: 'school' },
-        { id: 'students', label: t('sidebar.students', 'Alumnat'), icon: 'people' },
-        { id: 'certificates', label: t('sidebar.certificates', 'Certificats'), icon: 'assignment' },
-        { id: 'reports', label: t('sidebar.reports', 'Informes'), icon: 'analytics' },
-        { id: 'teachers', label: t('sidebar.teachers', 'Docència'), icon: 'co_present' },
-        { id: 'calendar', label: t('sidebar.calendar', 'Calendari'), icon: 'calendar_month' },
-        { id: 'settings', label: t('sidebar.settings', 'Ajustes'), icon: 'settings' },
+    const allItems = [
+        { id: 'dashboard', label: t('sidebar.dashboard', 'Tauler de Control'), icon: 'dashboard', roles: ['admin'] },
+        { id: 'active-courses', label: t('sidebar.active_courses', 'Cursos Actius'), icon: 'school', roles: ['admin'] },
+        { id: 'students', label: t('sidebar.students', 'Alumnat'), icon: 'people', roles: ['admin'] },
+        { id: 'certificates', label: t('sidebar.certificates', 'Certificats'), icon: 'assignment', roles: ['admin'] },
+        { id: 'reports', label: t('sidebar.reports', 'Informes'), icon: 'analytics', roles: ['admin'] },
+        { id: 'teachers', label: t('sidebar.teachers', 'Docència'), icon: 'co_present', roles: ['admin', 'teacher'] },
+        { id: 'calendar', label: t('sidebar.calendar', 'Calendari'), icon: 'calendar_month', roles: ['admin', 'teacher'] },
+        { id: 'users', label: t('sidebar.users', 'Usuaris'), icon: 'admin_panel_settings', roles: ['admin'] },
+        { id: 'settings', label: t('sidebar.settings', 'Ajustes'), icon: 'settings', roles: ['admin'] }
     ];
+
+    const navItems = allItems.filter(item =>
+        (isAdmin && item.roles.includes('admin')) ||
+        (isTeacher && item.roles.includes('teacher'))
+    );
 
     return (
         <>
@@ -56,7 +64,7 @@ const Sidebar = ({ currentView, onNavigate }) => {
                             href="#"
                             onClick={(e) => {
                                 e.preventDefault();
-                                onNavigate(item.id);
+                                if (onNavigate) onNavigate(item.id);
                             }}
                             className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === item.id
                                 ? 'bg-white text-[#E30613] font-bold shadow-md'

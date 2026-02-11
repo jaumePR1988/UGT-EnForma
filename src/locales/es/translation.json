@@ -43,7 +43,8 @@
         "reports": "Informes",
         "teachers": "Docencia",
         "calendar": "Calendario",
-        "settings": "Ajustes"
+        "settings": "Ajustes",
+        "users": "Usuarios"
     },
     "common": {
         "loading": "Cargando...",
@@ -295,7 +296,13 @@
         "password_label": "Contraseña",
         "remember_me": "Recuérdame",
         "forgot_password": "¿Has olvidado la contraseña?",
-        "submit_button": "INICIAR SESIÓN"
+        "submit_button": "INICIAR SESIÓN",
+        "reset_title": "Restablecer Contraseña",
+        "reset_subtitle": "Te enviaremos un correo oficial",
+        "reset_email_sent": "Se ha enviado un correo de restablecimiento",
+        "reset_error": "No se ha encontrado ningún usuario con este correo",
+        "send_reset_link": "Enviar Enlace",
+        "activation_notice": "Si eres un nuevo usuario, usa \"Has olvidado la contraseña\" para activar tu cuenta"
     },
     "calendar": {
         "legend": {
@@ -318,5 +325,41 @@
         "yes_delete": "Sí, eliminar",
         "yes_continue": "Sí, continuar",
         "accept": "De acuerdo"
+    },
+    "users": {
+        "title": "Gestión de Usuarios",
+        "subtitle": "Administra el acceso y los roles del personal de formación.",
+        "new_button": "Nuevo Usuario",
+        "table": {
+            "name": "Nombre",
+            "email": "Correo electrónico",
+            "role": "Rol",
+            "status": "Estado",
+            "actions": "Acciones"
+        },
+        "roles": {
+            "admin": "Administrador",
+            "teacher": "Docente"
+        },
+        "status": {
+            "active": "Activo",
+            "inactive": "Inactivo"
+        },
+        "modal": {
+            "create_title": "Crear Nuevo Usuario",
+            "edit_title": "Editar Usuario",
+            "delete_title": "Eliminar Usuario",
+            "delete_confirm": "¿Estás seguro de que quieres eliminar este usuario? Perderá el acceso al sistema inmediatamente.",
+            "fields": {
+                "uid": "UID Firebase (Manual)",
+                "uid_placeholder": "ID técnico de Firebase (opcional)",
+                "name": "Nombre y Apellidos",
+                "email": "Email",
+                "role": "Rol del usuario",
+                "uid_required": "Se requiere el email para la invitación"
+            },
+            "invite_subject": "Bienvenido/a a UGT EnForma - Acceso al CRM",
+            "invite_body": "Hola %NAME%,\n\nTe hemos dado de alta en la plataforma UGT EnForma como %ROLE%.\n\nPara activar tu cuenta, haz clic en el siguiente enlace y usa la opción \"¿Has olvidado la contraseña?\" para establecer tu clave personal:\n\n%LINK%\n\n¡Bienvenido/a al equipo!"
+        }
     }
 }

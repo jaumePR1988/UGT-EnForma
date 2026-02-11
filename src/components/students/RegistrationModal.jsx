@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Sparkles, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { studentService } from '../../services/studentService';
+import { notificationService } from '../../services/notificationService';
 
 /**
  * CONFIGURACIÓ DINÀMICA (Això podria venir de Firebase en el futur)
@@ -63,11 +64,23 @@ export const RegistrationModal = ({ isOpen, onClose, onFinish }) => {
     const handleSubmit = async () => {
         setLoading(true);
         try {
-            await studentService.registerStudent({
+            const studentData = {
                 ...formData,
                 status: 'Actiu',
                 registrationDate: new Date().toISOString()
-            });
+            };
+            await studentService.registerStudent(studentData);
+
+            // Try to send welcome email if possible (best effort in modal)
+            try {
+                // Note: In this modal we might not have the full course object, 
+                // but the course info should be in the student data if passed.
+                // For now we trigger it with what we have.
+                await notificationService.sendWelcomeEmail(studentData, { name: 'el curs' });
+            } catch (e) {
+                console.warn("Mail trigger skipped in modal:", e);
+            }
+
             onFinish();
             onClose();
         } catch (error) {

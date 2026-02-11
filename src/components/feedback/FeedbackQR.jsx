@@ -3,6 +3,7 @@ import QRCode from "react-qr-code";
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Star, RefreshCw, Smartphone } from 'lucide-react';
+import { getBaseUrl } from '../../utils/url';
 
 export const FeedbackQR = ({ isOpen, onClose, course, session, type = 'session' }) => {
     // type: 'session' | 'course'
@@ -10,7 +11,7 @@ export const FeedbackQR = ({ isOpen, onClose, course, session, type = 'session' 
 
     useEffect(() => {
         if (isOpen && course) {
-            const baseUrl = window.location.origin;
+            const baseUrl = getBaseUrl();
             // Construct public feedback URL
             // /public/feedback/session/:sessionId?c=courseId
             // /public/feedback/course/:courseId

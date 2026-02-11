@@ -33,7 +33,8 @@ export const instructorService = {
     async addInstructor(instructorData) {
         try {
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-                ...instructorData,
+                name: instructorData.name,
+                email: instructorData.email || '',
                 createdAt: serverTimestamp(),
                 active: true
             });

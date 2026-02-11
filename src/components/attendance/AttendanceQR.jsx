@@ -3,6 +3,8 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { RefreshCw, Smartphone, CheckCircle, Users, Clock, Shield } from 'lucide-react';
 import QRCode from "react-qr-code";
+import { studentService } from '../../services/studentService';
+import { getBaseUrl } from '../../utils/url';
 
 export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
     if (!course) return null;
@@ -23,16 +25,46 @@ export const AttendanceQR = ({ isOpen, onClose, course, session }) => {
                     return prev - 1;
                 });
             }, 1000);
-            return () => clearInterval(timer);
+
+            // Subscribe to real-time attendance updates
+            const unsubscribe = studentService.subscribeToStudentsByCourse(course.id, (students) => {
+                if (session) {
+                    // Count students who have this specific session in their attendanceSessions
+                    const count = students.filter(s =>
+                        s.attendanceSessions?.includes(session.id)
+                    ).length;
+                    setScannedCount(count);
+                } else {
+                    // Fallback to today's date if no session provided
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    const todayStr = `${year}-${month}-${day}`;
+
+                    const todaySession = course.sessions?.find(s => s.date === todayStr);
+                    if (todaySession) {
+                        const count = students.filter(s =>
+                            s.attendanceSessions?.includes(todaySession.id)
+                        ).length;
+                        setScannedCount(count);
+                    }
+                }
+            });
+
+            return () => {
+                clearInterval(timer);
+                if (unsubscribe) unsubscribe();
+            };
         }
-    }, [isOpen, course]);
+    }, [isOpen, course, session]);
 
     const generateNewQR = (specificSession = null) => {
         setIsRotating(true);
         // Simulem generació d'un token d'assistència signat
         const token = btoa(`${course.id}-${Date.now()}-${Math.random()}`);
         // Ensure the URL is absolute for scanning
-        const baseUrl = window.location.origin;
+        const baseUrl = getBaseUrl();
 
         let url = `${baseUrl}/public/attendance/${course.id}?t=${token}`;
 

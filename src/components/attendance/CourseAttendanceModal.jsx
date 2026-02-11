@@ -138,9 +138,11 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
                     studentName: student.fullName
                 });
                 playSound('warning');
-            } else {
                 // Mark as attended
-                toggleAttendance(studentId, true); // Force true
+                const stats = getStudentStats(student);
+                if (!stats.attendedToday) {
+                    toggleAttendance(studentId, true); // Force true
+                }
                 setScanFeedback({
                     type: 'success',
                     message: 'Assistència registrada correctament',
@@ -180,8 +182,12 @@ export const CourseAttendanceModal = ({ isOpen, onClose, course }) => {
                 // Mock update for UI
                 let newSessions = s.attendanceSessions || [];
                 if (activeSession) {
-                    if (isAttending) newSessions = [...newSessions, activeSession.id];
-                    else newSessions = newSessions.filter(id => id !== activeSession.id);
+                    if (isAttending) {
+                        // Use Set to ensure uniqueness
+                        newSessions = Array.from(new Set([...newSessions, activeSession.id]));
+                    } else {
+                        newSessions = newSessions.filter(id => id !== activeSession.id);
+                    }
                 }
                 return { ...s, attendanceSessions: newSessions, attended: isAttending };
             }

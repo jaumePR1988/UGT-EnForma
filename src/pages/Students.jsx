@@ -7,6 +7,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Modal } from '../components/ui/Modal';
+import { useNotifications } from '../context/NotificationContext';
 
 // --- Helpers ---
 const formatDate = (timestamp) => {
@@ -331,7 +332,7 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
             handleRefresh();
         } catch (error) {
             console.error("Error deleting student:", error);
-            alert("Error al eliminar l'alumne.");
+            showNotification("Error al eliminar l'alumne.", "error");
         }
     };
 
@@ -417,7 +418,7 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
 
     const handleExportCSV = () => {
         if (!filteredStudents || filteredStudents.length === 0) {
-            alert("No hi ha dades per exportar.");
+            showNotification("No hi ha dades per exportar.", "warning");
             return;
         }
 
@@ -455,347 +456,332 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
     };
 
     return (
-        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
-            <Sidebar currentView="students" onNavigate={onNavigate} toggleDarkMode={toggleDarkMode} />
+        <div className="space-y-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <nav aria-label="Breadcrumb" className="flex text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">
+                        <ol className="inline-flex items-center space-x-2" style={{ listStyle: 'none' }}>
+                            <li>Admin</li>
+                            <li><span className="mx-1">/</span></li>
+                            <li className="text-slate-600">Alumnat</li>
+                        </ol>
+                    </nav>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">{t('students.title')}</h1>
+                    <p className="text-slate-500 font-medium mt-2">{t('students.subtitle')}</p>
+                </div>
 
-            <main className="lg:ml-64 p-6 lg:p-10">
-                <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+                        <input
+                            className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-72 transition-all text-sm shadow-sm"
+                            placeholder={t('students.search_placeholder')}
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        className={`p-2.5 transition-all bg-white border rounded-xl shadow-sm ${isFiltersOpen ? 'text-primary border-primary ring-2 ring-red-50' : 'text-slate-400 border-slate-200 hover:text-primary hover:border-primary'}`}
+                        title={isFiltersOpen ? t('students.filters.hide') : t('students.filters.show')}
+                        onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                    >
+                        <span className="material-icons-outlined text-[20px]">filter_list</span>
+                    </button>
+                    <button
+                        className="bg-primary hover:bg-black text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center text-sm shadow-lg shadow-red-500/20 active:scale-95"
+                        onClick={() => onNavigate('enroll-student')}
+                    >
+                        <span className="material-icons-outlined mr-2 text-[20px]">person_add</span>
+                        {t('students.new_button')}
+                    </button>
+                </div>
+            </header>
+
+            <div className="flex items-center gap-6 mb-8">
+                <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+                    <button
+                        onClick={() => setShowArchived(false)}
+                        className={`px-6 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${!showArchived ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        Actius
+                    </button>
+                    <button
+                        onClick={() => setShowArchived(true)}
+                        className={`px-6 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${showArchived ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        Històric
+                    </button>
+                </div>
+                <label className="flex items-center space-x-3 text-sm font-bold text-slate-600 cursor-pointer group">
+                    <input
+                        type="checkbox"
+                        checked={showArchived}
+                        onChange={(e) => setShowArchived(e.target.checked)}
+                        className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary transition-all cursor-pointer"
+                    />
+                    <span className="group-hover:text-primary transition-colors">Veure alumnat de cursos finalitzats</span>
+                </label>
+            </div>
+
+            {isFiltersOpen && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl mb-8 grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('students.title')}</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">{t('students.subtitle')}</p>
-
-                        {/* Archive Tabs */}
-                        <div className="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                            <button
-                                onClick={() => setShowArchived(false)}
-                                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${!showArchived
-                                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                                    }`}
-                            >
-                                Actius
-                            </button>
-                            <button
-                                onClick={() => setShowArchived(true)}
-                                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${showArchived
-                                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                                    }`}
-                            >
-                                Històric
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <div className="relative">
-                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                            <input
-                                className="pl-10 pr-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-72 transition-all text-sm"
-                                placeholder={t('students.search_placeholder')}
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <button
-                            className={`p-2 transition-colors bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg ${isFiltersOpen ? 'text-primary border-primary' : 'text-slate-400 hover:text-primary'}`}
-                            title={isFiltersOpen ? t('students.filters.hide') : t('students.filters.show')}
-                            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-                        >
-                            <span className="material-icons-outlined text-[20px]">filter_list</span>
-                        </button>
-
-                        <button
-                            className="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg group"
-                            title="Actualitzar llista"
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                        >
-                            <span className={`material-icons-outlined text-[20px] ${isRefreshing ? 'animate-spin text-primary' : 'group-hover:rotate-180 transition-transform duration-500'}`}>
-                                refresh
-                            </span>
-                        </button>
-                        <button
-                            className="bg-primary hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm"
-                            onClick={() => onNavigate('enroll-student')}
-                        >
-                            <span className="material-icons-outlined mr-2 text-[20px]">person_add</span>
-                            {t('students.new_button')}
-                        </button>
-                    </div>
-
-                    {/* Archive Toggle */}
-                    <div className="flex items-center ml-4">
-                        <label className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={showArchived}
-                                onChange={(e) => setShowArchived(e.target.checked)}
-                                className="form-checkbox h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                            />
-                            <span>Veure alumnes de cursos finalitzats</span>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                            {t('students.filters.course_label')}
                         </label>
+                        <select
+                            className="w-full p-3 text-sm bg-slate-50 text-slate-900 border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none font-medium appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                            value={filters.courseId}
+                            onChange={(e) => setFilters({ ...filters, courseId: e.target.value })}
+                        >
+                            <option value="">{t('students.filters.all_courses')}</option>
+                            {availableCourses.map(course => (
+                                <option key={course.id} value={course.id}>
+                                    {course.name || course.title}
+                                </option>
+                            ))}
+                        </select>
                     </div>
-                </header>
-
-                {/* Filters Panel logic... (Omitted as it was already correct) */}
-                {isFiltersOpen && (
-                    <div className="bg-white dark:bg-card-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 animate-fadeIn">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                {t('students.filters.course_label')}
-                            </label>
-                            <select
-                                className="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                value={filters.courseId}
-                                onChange={(e) => setFilters({ ...filters, courseId: e.target.value })}
-                            >
-                                <option value="" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.filters.all_courses')}</option>
-                                {availableCourses.map(course => (
-                                    <option key={course.id} value={course.id} className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">
-                                        {course.name || course.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                {t('students.filters.status_label')}
-                            </label>
-                            <select
-                                className="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                value={filters.status}
-                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                            >
-                                <option value="" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.filters.all_statuses')}</option>
-                                <option value="registered" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.status_values.registered')}</option>
-                                <option value="Inscrit" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.status_values.inscrit')}</option>
-                                <option value="Pagat" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.status_values.pagat')}</option>
-                                <option value="Baixa" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{t('students.status_values.baixa')}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                {t('students.filters.federation_label')}
-                            </label>
-                            <select
-                                className="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                value={filters.federation}
-                                onChange={(e) => setFilters({ ...filters, federation: e.target.value })}
-                            >
-                                <option value="" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">Totes les federacions</option>
-                                {uniqueFederations.map(fed => (
-                                    <option key={fed} value={fed} className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-gray-100">{formatFederation(fed, t)}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="flex items-end">
-                            <button
-                                onClick={() => setFilters({ courseId: '', status: '', federation: '' })}
-                                className="w-full p-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white border border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <span className="material-icons-outlined text-[18px]">filter_alt_off</span>
-                                {t('students.filters.clear')}
-                            </button>
-                        </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                            {t('students.filters.status_label')}
+                        </label>
+                        <select
+                            className="w-full p-3 text-sm bg-slate-50 text-slate-900 border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none font-medium appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                            value={filters.status}
+                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                        >
+                            <option value="">{t('students.filters.all_statuses')}</option>
+                            <option value="registered">{t('students.status_values.registered')}</option>
+                            <option value="Inscrit">{t('students.status_values.inscrit')}</option>
+                            <option value="Pagat">{t('students.status_values.pagat')}</option>
+                            <option value="Baixa">{t('students.status_values.baixa')}</option>
+                        </select>
                     </div>
-                )}
-
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {/* Stats ... (same, just simplified for file writing) */}
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.active')}</h3>
-                            <div className="p-2 bg-red-100 dark:bg-red-900/30 text-primary rounded-lg">
-                                <span className="material-icons-outlined text-[20px]">groups</span>
-                            </div>
-                        </div>
-                        <p className="text-3xl font-bold">{students ? students.length : 0}</p>
-                        <div className="flex items-center mt-2 text-xs text-green-600 font-medium">
-                            <span className="material-icons-outlined text-[14px] mr-1">trending_up</span>
-                            Dades actualitzades
-                        </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                            {t('students.filters.federation_label')}
+                        </label>
+                        <select
+                            className="w-full p-3 text-sm bg-slate-50 text-slate-900 border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none font-medium appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                            value={filters.federation}
+                            onChange={(e) => setFilters({ ...filters, federation: e.target.value })}
+                        >
+                            <option value="">Totes les federacions</option>
+                            {uniqueFederations.map(fed => (
+                                <option key={fed} value={fed}>{formatFederation(fed, t)}</option>
+                            ))}
+                        </select>
                     </div>
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm opacity-60">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.new')}</h3>
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg">
-                                <span className="material-icons-outlined text-[20px]">assignment_ind</span>
-                            </div>
-                        </div>
-                        <p className="text-3xl font-bold">-</p>
-                        <div className="flex items-center mt-2 text-xs text-slate-500 font-medium">
-                            Calculant...
-                        </div>
-                    </div>
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm opacity-60">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.drop')}</h3>
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-lg">
-                                <span className="material-icons-outlined text-[20px]">person_off</span>
-                            </div>
-                        </div>
-                        <p className="text-3xl font-bold">0%</p>
-                        <div className="flex items-center mt-2 text-xs text-slate-500 font-medium">
-                            Dada estimada
-                        </div>
+                    <div className="flex items-end">
+                        <button
+                            onClick={() => setFilters({ courseId: '', status: '', federation: '' })}
+                            className="w-full p-3 text-sm font-bold text-slate-400 hover:text-primary border-2 border-dashed border-slate-100 hover:border-primary rounded-xl transition-all flex items-center justify-center gap-2 group"
+                        >
+                            <span className="material-icons-outlined text-[18px] group-hover:rotate-12 transition-transform">filter_alt_off</span>
+                            {t('students.filters.clear')}
+                        </button>
                     </div>
                 </div>
+            )}
 
-                <div className="bg-card-light dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <h2 className="font-bold text-lg">Llistat detallat d'alumnat</h2>
-                            {(filters.courseId || filters.status || filters.federation) && (
-                                <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full">
-                                    Filtres Actius
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={handleExportCSV}
-                                className="flex items-center px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                <span className="material-icons-outlined mr-1.5 text-[18px]">download</span>
-                                Exportar CSV
-                            </button>
-                            <button
-                                onClick={handleGeneratePDF}
-                                className="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
-                            >
-                                <span className="material-icons-outlined mr-1.5 text-[18px]">picture_as_pdf</span>
-                                Informe PDF
-                            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Stats ... (same, just simplified for file writing) */}
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.active')}</h3>
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 text-primary rounded-lg">
+                            <span className="material-icons-outlined text-[20px]">groups</span>
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Alumne/a</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Curs</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Federació</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Assistència</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estat</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Accions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {currentStudents && currentStudents.length > 0 ? (
-                                    currentStudents.map(student => {
-                                        const stats = getAttendanceStats(student);
-                                        return (
-                                            <tr key={student.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center">
-                                                        <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 font-bold mr-3">
-                                                            {student.fullName ? student.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'AL'}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-semibold text-sm">{student.fullName}</p>
-                                                            <p className="text-xs text-slate-500">{student.dni || student.email}</p>
+                    <p className="text-3xl font-bold">{students ? students.length : 0}</p>
+                    <div className="flex items-center mt-2 text-xs text-green-600 font-medium">
+                        <span className="material-icons-outlined text-[14px] mr-1">trending_up</span>
+                        Dades actualitzades
+                    </div>
+                </div>
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm opacity-60">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.new')}</h3>
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg">
+                            <span className="material-icons-outlined text-[20px]">assignment_ind</span>
+                        </div>
+                    </div>
+                    <p className="text-3xl font-bold">-</p>
+                    <div className="flex items-center mt-2 text-xs text-slate-500 font-medium">
+                        Calculant...
+                    </div>
+                </div>
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm opacity-60">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('students.stats.drop')}</h3>
+                        <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-lg">
+                            <span className="material-icons-outlined text-[20px]">person_off</span>
+                        </div>
+                    </div>
+                    <p className="text-3xl font-bold">0%</p>
+                    <div className="flex items-center mt-2 text-xs text-slate-500 font-medium">
+                        Dada estimada
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-card-light dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <h2 className="font-bold text-lg">Llistat detallat d'alumnat</h2>
+                        {(filters.courseId || filters.status || filters.federation) && (
+                            <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full">
+                                Filtres Actius
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <span className="material-icons-outlined mr-1.5 text-[18px]">download</span>
+                            Exportar CSV
+                        </button>
+                        <button
+                            onClick={handleGeneratePDF}
+                            className="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                        >
+                            <span className="material-icons-outlined mr-1.5 text-[18px]">picture_as_pdf</span>
+                            Informe PDF
+                        </button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-800/50">
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Alumne/a</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Curs</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Federació</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Assistència</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estat</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Accions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {currentStudents && currentStudents.length > 0 ? (
+                                currentStudents.map(student => {
+                                    const stats = getAttendanceStats(student);
+                                    return (
+                                        <tr key={student.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center">
+                                                    <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 font-bold mr-3">
+                                                        {student.fullName ? student.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'AL'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-sm">{student.fullName}</p>
+                                                        <p className="text-xs text-slate-500">{student.dni || student.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-sm font-medium">{student.courseTitle || 'Curs Desconegut'}</p>
+                                                <p className="text-xs text-slate-500">Inscrit: {formatDate(student.registeredAt)}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                    {formatFederation(student.federation, t)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {stats && stats.total > 0 ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <span className={`text-xs font-bold ${stats.percentage === 100 ? 'text-green-600' :
+                                                            stats.percentage >= 80 ? 'text-emerald-500' :
+                                                                stats.percentage >= 50 ? 'text-yellow-600' : 'text-red-500'
+                                                            }`}>
+                                                            {stats.attended}/{stats.total} ({stats.percentage}%)
+                                                        </span>
+                                                        <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all duration-500 ${stats.percentage === 100 ? 'bg-green-500' :
+                                                                    stats.percentage >= 80 ? 'bg-emerald-400' :
+                                                                        stats.percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                                                                    }`}
+                                                                style={{ width: `${stats.percentage}%` }}
+                                                            />
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-sm font-medium">{student.courseTitle || 'Curs Desconegut'}</p>
-                                                    <p className="text-xs text-slate-500">Inscrit: {formatDate(student.registeredAt)}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-sm text-slate-700 dark:text-slate-300">
-                                                        {formatFederation(student.federation, t)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    {stats && stats.total > 0 ? (
-                                                        <div className="flex flex-col items-center">
-                                                            <span className={`text-xs font-bold ${stats.percentage === 100 ? 'text-green-600' :
-                                                                stats.percentage >= 80 ? 'text-emerald-500' :
-                                                                    stats.percentage >= 50 ? 'text-yellow-600' : 'text-red-500'
-                                                                }`}>
-                                                                {stats.attended}/{stats.total} ({stats.percentage}%)
-                                                            </span>
-                                                            <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
-                                                                <div
-                                                                    className={`h-full rounded-full transition-all duration-500 ${stats.percentage === 100 ? 'bg-green-500' :
-                                                                        stats.percentage >= 80 ? 'bg-emerald-400' :
-                                                                            stats.percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'
-                                                                        }`}
-                                                                    style={{ width: `${stats.percentage}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-slate-400">---</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full 
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">---</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full 
                                                     ${student.status === 'Inscrit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                                                            student.status === 'registered' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' :
-                                                                student.status === 'Pagat' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
-                                                                    'bg-slate-100 text-slate-700 dark:bg-slate-800'
-                                                        }`}>
-                                                        {t(`students.status_values.${(student.status || 'registered').toLowerCase()}`) || student.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        <button
-                                                            className="p-2 text-slate-400 hover:text-primary transition-colors"
-                                                            title="Veure perfil"
-                                                            onClick={() => {
-                                                                setSelectedStudent(student);
-                                                                setIsDetailOpen(true);
-                                                            }}
-                                                        >
-                                                            <span className="material-icons-outlined text-[20px]">visibility</span>
-                                                        </button>
-                                                        <button
-                                                            className="p-2 text-slate-400 hover:text-green-600 transition-colors"
-                                                            title="Contactar WhatsApp"
-                                                            onClick={() => window.open(`https://wa.me/${student.phone}`, '_blank')}
-                                                        >
-                                                            <span className="material-icons-outlined text-[20px]">chat</span>
-                                                        </button>
-                                                        <button
-                                                            className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                                                            title="Editar"
-                                                            onClick={() => onNavigate(`edit-student/${student.id}`)}
-                                                        >
-                                                            <span className="material-icons-outlined text-[20px]">edit</span>
-                                                        </button>
-                                                        <button
-                                                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
-                                                            title="Eliminar"
-                                                            onClick={() => {
-                                                                setStudentToDelete(student.id);
-                                                                setIsDeleteDialogOpen(true);
-                                                            }}
-                                                        >
-                                                            <span className="material-icons-outlined text-[20px]">delete</span>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
-                                            No s'han trobat alumnes que coincideixin amb la cerca.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                        student.status === 'registered' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' :
+                                                            student.status === 'Pagat' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
+                                                                'bg-slate-100 text-slate-700 dark:bg-slate-800'
+                                                    }`}>
+                                                    {t(`students.status_values.${(student.status || 'registered').toLowerCase()}`) || student.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end space-x-2">
+                                                    <button
+                                                        className="p-2 text-slate-400 hover:text-primary transition-colors"
+                                                        title="Veure perfil"
+                                                        onClick={() => {
+                                                            setSelectedStudent(student);
+                                                            setIsDetailOpen(true);
+                                                        }}
+                                                    >
+                                                        <span className="material-icons-outlined text-[20px]">visibility</span>
+                                                    </button>
+                                                    <button
+                                                        className="p-2 text-slate-400 hover:text-green-600 transition-colors"
+                                                        title="Contactar WhatsApp"
+                                                        onClick={() => window.open(`https://wa.me/${student.phone}`, '_blank')}
+                                                    >
+                                                        <span className="material-icons-outlined text-[20px]">chat</span>
+                                                    </button>
+                                                    <button
+                                                        className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                        title="Editar"
+                                                        onClick={() => onNavigate(`edit-student/${student.id}`)}
+                                                    >
+                                                        <span className="material-icons-outlined text-[20px]">edit</span>
+                                                    </button>
+                                                    <button
+                                                        className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                                                        title="Eliminar"
+                                                        onClick={() => {
+                                                            setStudentToDelete(student.id);
+                                                            setIsDeleteDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <span className="material-icons-outlined text-[20px]">delete</span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                                        No s'han trobat alumnes que coincideixin amb la cerca.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                {/* Pagination Controls */}
-                {filteredStudents.length > itemsPerPage && (
+            {/* Pagination Controls */}
+            {
+                filteredStudents.length > itemsPerPage && (
                     <div className="flex items-center justify-between mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
                         <div className="text-sm text-slate-500 dark:text-slate-400">
                             {t('students.pagination.showing', {
@@ -826,25 +812,25 @@ const Students = ({ onNavigate, toggleDarkMode, students, courses, refreshStuden
                             </button>
                         </div>
                     </div>
-                )}
+                )
+            }
 
-                <ConfirmDialog
-                    isOpen={isDeleteDialogOpen}
-                    onClose={() => setIsDeleteDialogOpen(false)}
-                    onConfirm={handleDelete}
-                    title={t('confirm.delete_student_title')}
-                    description={t('confirm.delete_student_desc')}
-                    confirmText={t('confirm.yes_delete')}
-                    cancelText={t('common.cancel')}
-                />
+            <ConfirmDialog
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                onConfirm={handleDelete}
+                title={t('confirm.delete_student_title')}
+                description={t('confirm.delete_student_desc')}
+                confirmText={t('confirm.yes_delete')}
+                cancelText={t('common.cancel')}
+            />
 
-                <StudentDetailModal
-                    isOpen={isDetailOpen}
-                    onClose={() => setIsDetailOpen(false)}
-                    student={selectedStudent}
-                    attendanceStats={selectedStudent ? getAttendanceStats(selectedStudent) : null}
-                />
-            </main>
+            <StudentDetailModal
+                isOpen={isDetailOpen}
+                onClose={() => setIsDetailOpen(false)}
+                student={selectedStudent}
+                attendanceStats={selectedStudent ? getAttendanceStats(selectedStudent) : null}
+            />
         </div>
     );
 };

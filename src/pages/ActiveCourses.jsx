@@ -1,12 +1,15 @@
 import React from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import { courseService } from '../services/courseService';
+import { useNotifications } from '../context/NotificationContext';
+import { getBaseUrl } from '../utils/url';
 
 const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) => {
+    const { showNotification } = useNotifications();
     const copyLink = (courseId) => {
-        const url = `${window.location.origin}/public/enroll/${courseId}`;
+        const url = `${getBaseUrl()}/public/enroll/${courseId}`;
         navigator.clipboard.writeText(url);
-        alert("Enllaç d'inscripció pública copiat!");
+        showNotification("Enllaç d'inscripció pública copiat!", "success");
     };
 
     const handleDelete = async (courseId) => {
@@ -18,7 +21,7 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) 
                     await refreshCourses();
                 }
             } catch (error) {
-                alert("Error eliminant el curs: " + error.message);
+                showNotification("Error eliminant el curs: " + error.message, "error");
             }
         }
     };
@@ -31,7 +34,7 @@ const ActiveCourses = ({ onNavigate, toggleDarkMode, courses, refreshCourses }) 
                     await refreshCourses();
                 }
             } catch (error) {
-                alert("Error finalitzant el curs: " + error.message);
+                showNotification("Error finalitzant el curs: " + error.message, "error");
             }
         }
     };

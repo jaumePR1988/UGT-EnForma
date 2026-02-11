@@ -14,7 +14,8 @@ import {
     onSnapshot,
     arrayUnion,
     arrayRemove,
-    increment
+    increment,
+    runTransaction
 } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'students';
@@ -63,42 +64,52 @@ export const studentService = {
             throw new Error("L'Email és obligatori.");
         }
 
+        // Normalize DNI
+        const normalizedDni = studentData.dni ? studentData.dni.trim().toUpperCase() : '';
+
         try {
-            // Verificar si ya existe en este curso particular
-            const q = query(
-                collection(db, COLLECTION_NAME),
-                where("dni", "==", studentData.dni),
-                where("courseId", "==", studentData.courseId)
-            );
-            const existing = await getDocs(q);
+            // Use a transaction to ensure atomic registration and count increment
+            return await runTransaction(db, async (transaction) => {
+                // 1. Check for duplicates within the transaction
+                const q = query(
+                    collection(db, COLLECTION_NAME),
+                    where("dni", "==", normalizedDni),
+                    where("courseId", "==", studentData.courseId)
+                );
+                const existing = await getDocs(q);
 
-            if (!existing.empty) {
-                throw new Error("L'alumne ja està inscrit en aquest curs.");
-            }
-
-            const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-                ...studentData,
-                registeredAt: serverTimestamp(),
-                status: studentData.status || 'registered',
-                isAffiliated: studentData.isAffiliated || false
-            });
-
-            // Increment student count in course
-            if (studentData.courseId) {
-                const courseRef = doc(db, 'courses', studentData.courseId);
-                try {
-                    await updateDoc(courseRef, {
-                        students: increment(1)
-                    });
-                } catch (e) {
-                    console.error("Failed to update course count", e);
-                    // Decide if we want to throw or just log. For now log to not block success.
+                if (!existing.empty) {
+                    throw new Error("L'alumne ja està inscrit en aquest curs.");
                 }
-            }
 
-            return { id: docRef.id, ...studentData };
+                // 2. Prepare student document reference
+                const studentRef = doc(collection(db, COLLECTION_NAME));
+
+                // 3. Increment student count in course
+                if (studentData.courseId) {
+                    const courseRef = doc(db, 'courses', studentData.courseId);
+                    const courseSnap = await transaction.get(courseRef);
+
+                    if (courseSnap.exists()) {
+                        transaction.update(courseRef, {
+                            students: increment(1)
+                        });
+                    }
+                }
+
+                // 4. Create student document
+                transaction.set(studentRef, {
+                    ...studentData,
+                    dni: normalizedDni, // Ensure normalized DNI is saved
+                    registeredAt: serverTimestamp(),
+                    status: studentData.status || 'registered',
+                    isAffiliated: studentData.isAffiliated || false
+                });
+
+                return { id: studentRef.id, ...studentData, dni: normalizedDni };
+            });
         } catch (error) {
-            console.error("Error registering student:", error);
+            console.error("Error registering student in transaction:", error);
             throw error;
         }
     },

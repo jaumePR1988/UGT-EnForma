@@ -277,225 +277,221 @@ const Reports = ({ onNavigate, toggleDarkMode, courses = [], students = [] }) =>
     };
 
     return (
-        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
-            <Sidebar currentView="reports" onNavigate={onNavigate} toggleDarkMode={toggleDarkMode} />
+        <div className="space-y-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Informes i Analítica</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        Visió general del rendiment formatiu
+                        <span className="ml-2 px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-xs font-semibold uppercase">
+                            {timeRange === 'weekly' ? 'Setmanal' : timeRange === 'monthly' ? 'Mensual' : 'Anual'}
+                        </span>
+                    </p>
+                </div>
 
-            <main className="lg:ml-64 p-6 lg:p-10">
-                <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Informes i Analítica</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                            Visió general del rendiment formatiu
-                            <span className="ml-2 px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-xs font-semibold uppercase">
-                                {timeRange === 'weekly' ? 'Setmanal' : timeRange === 'monthly' ? 'Mensual' : 'Anual'}
-                            </span>
-                        </p>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <button
+                            onClick={() => setTimeRange('weekly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'weekly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Setmana
+                        </button>
+                        <button
+                            onClick={() => setTimeRange('monthly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'monthly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Mes
+                        </button>
+                        <button
+                            onClick={() => setTimeRange('yearly')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'yearly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                        >
+                            Any
+                        </button>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <button
-                                onClick={() => setTimeRange('weekly')}
-                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'weekly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            >
-                                Setmana
-                            </button>
-                            <button
-                                onClick={() => setTimeRange('monthly')}
-                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'monthly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            >
-                                Mes
-                            </button>
-                            <button
-                                onClick={() => setTimeRange('yearly')}
-                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'yearly' ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            >
-                                Any
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handleExportCSV}
-                                className="flex items-center bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg text-sm transition-colors shadow-sm"
-                                title="Exportar CSV"
-                            >
-                                <span className="material-icons-outlined text-sm">table_view</span>
-                            </button>
-                            <button
-                                onClick={handleExportPDF}
-                                className="flex items-center bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm"
-                            >
-                                <span className="material-icons-outlined text-sm mr-2">picture_as_pdf</span>
-                                Exportar PDF
-                            </button>
-                        </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg text-sm transition-colors shadow-sm"
+                            title="Exportar CSV"
+                        >
+                            <span className="material-icons-outlined text-sm">table_view</span>
+                        </button>
+                        <button
+                            onClick={handleExportPDF}
+                            className="flex items-center bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm"
+                        >
+                            <span className="material-icons-outlined text-sm mr-2">picture_as_pdf</span>
+                            Exportar PDF
+                        </button>
                     </div>
-                </header>
+                </div>
+            </header>
 
-                {/* KPI Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
-                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Participants</h3>
-                        <div className="flex items-end justify-between">
-                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{totalParticipants}</span>
-                            <span className="text-xs text-slate-400">
-                                {timeRange === 'yearly' ? 'Nous enguany' : timeRange === 'monthly' ? 'Nous aquest mes' : 'Nous aquesta setmana'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500"></div>
-                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Hores Realitzades</h3>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{Math.round(totalTrainingHours)}h</span>
-                            <span className="text-[10px] text-slate-400 leading-tight">
-                                Suma d'assistència x durada
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-red-600"></div>
-                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Taxa d'Afiliació</h3>
-                        <div className="flex items-end justify-between">
-                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{affiliationRate}%</span>
-                            <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">
-                                UGT
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
-                        <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Certificats</h3>
-                        <div className="flex items-end justify-between">
-                            <span className="text-3xl font-bold text-slate-800 dark:text-white">{totalCertificates}</span>
-                            <span className="text-xs text-slate-400">
-                                Emesos (Període)
-                            </span>
-                        </div>
+            {/* KPI Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                    <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
+                    <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Participants</h3>
+                    <div className="flex items-end justify-between">
+                        <span className="text-3xl font-bold text-slate-800 dark:text-white">{totalParticipants}</span>
+                        <span className="text-xs text-slate-400">
+                            {timeRange === 'yearly' ? 'Nous enguany' : timeRange === 'monthly' ? 'Nous aquest mes' : 'Nous aquesta setmana'}
+                        </span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Enrollment Chart */}
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Inscripcions</h3>
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                    <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500"></div>
+                    <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Hores Realitzades</h3>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-bold text-slate-800 dark:text-white">{Math.round(totalTrainingHours)}h</span>
+                        <span className="text-[10px] text-slate-400 leading-tight">
+                            Suma d'assistència x durada
+                        </span>
+                    </div>
+                </div>
+
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                    <div className="absolute right-0 top-0 h-full w-1 bg-red-600"></div>
+                    <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Taxa d'Afiliació</h3>
+                    <div className="flex items-end justify-between">
+                        <span className="text-3xl font-bold text-slate-800 dark:text-white">{affiliationRate}%</span>
+                        <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">
+                            UGT
+                        </span>
+                    </div>
+                </div>
+
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                    <div className="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
+                    <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Certificats</h3>
+                    <div className="flex items-end justify-between">
+                        <span className="text-3xl font-bold text-slate-800 dark:text-white">{totalCertificates}</span>
+                        <span className="text-xs text-slate-400">
+                            Emesos (Període)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Enrollment Chart */}
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Inscripcions</h3>
+                    <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={enrollmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorParticipants" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
+                                    itemStyle={{ color: '#f8fafc' }}
+                                    labelStyle={{ color: '#94a3b8' }}
+                                />
+                                <Area type="monotone" dataKey="participants" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorParticipants)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Certificates Chart */}
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Certificats Generats ({timeRange === 'yearly' ? 'Mensual' : 'Període'})</h3>
+                    {timeRange === 'yearly' && (
                         <div className="h-80 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={enrollmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorParticipants" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
+                                <BarChart data={certificatesChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
                                     <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
                                     <Tooltip
+                                        cursor={{ fill: 'transparent' }}
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
                                         itemStyle={{ color: '#f8fafc' }}
                                         labelStyle={{ color: '#94a3b8' }}
                                     />
-                                    <Area type="monotone" dataKey="participants" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorParticipants)" />
-                                </AreaChart>
+                                    <Bar dataKey="value" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
-                    </div>
+                    )}
+                    {timeRange !== 'yearly' && (
+                        <div className="h-80 flex items-center justify-center text-slate-400">
+                            Dades gràfiques disponibles en vista anual.
+                        </div>
+                    )}
+                </div>
+            </div>
 
-                    {/* Certificates Chart */}
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Certificats Generats ({timeRange === 'yearly' ? 'Mensual' : 'Període'})</h3>
-                        {timeRange === 'yearly' && (
-                            <div className="h-80 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={certificatesChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
-                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip
-                                            cursor={{ fill: 'transparent' }}
-                                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
-                                            itemStyle={{ color: '#f8fafc' }}
-                                            labelStyle={{ color: '#94a3b8' }}
-                                        />
-                                        <Bar dataKey="value" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={20} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        )}
-                        {timeRange !== 'yearly' && (
-                            <div className="h-80 flex items-center justify-center text-slate-400">
-                                Dades gràfiques disponibles en vista anual.
-                            </div>
-                        )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Affiliation Pie Chart */}
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Afiliació UGT (Període Seleccionat)</h3>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={affiliationData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={90}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {affiliationData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
+                                    itemStyle={{ color: '#f8fafc' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Affiliation Pie Chart */}
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Afiliació UGT (Període Seleccionat)</h3>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={affiliationData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={90}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {affiliationData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
-                                        itemStyle={{ color: '#f8fafc' }}
-                                    />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Course Status Pie Chart */}
-                    <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Estat dels Cursos Global</h3>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={courseStatusData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={90}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {courseStatusData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
-                                        itemStyle={{ color: '#f8fafc' }}
-                                    />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                {/* Course Status Pie Chart */}
+                <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Estat dels Cursos Global</h3>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={courseStatusData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={90}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {courseStatusData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
+                                    itemStyle={{ color: '#f8fafc' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };

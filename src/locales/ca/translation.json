@@ -16,7 +16,7 @@
             "new_registration": "Nova inscripció",
             "registered_in": "s'ha inscrit a",
             "new_course": "Nou curs publicat",
-            "is_visible": "ja és visible"
+            "is_visible": "ya es visible"
         },
         "sections": {
             "weekly_calendar": "Calendari Setmanal de Formació",
@@ -43,7 +43,8 @@
         "reports": "Informes",
         "teachers": "Docència",
         "calendar": "Calendari",
-        "settings": "Ajustes"
+        "settings": "Ajustes",
+        "users": "Usuaris"
     },
     "common": {
         "loading": "Carregant...",
@@ -65,6 +66,11 @@
         "new_button": "CREAR NOU CURS",
         "loading": "Carregant cursos...",
         "no_courses": "No s'han trobat cursos actius.",
+        "tabs": {
+            "active": "Actius",
+            "drafts": "Esborranys",
+            "archived": "Arxiu"
+        },
         "sessions_count": "{{count}} sessions programades",
         "no_instructor": "Professorat no assignat",
         "table": {
@@ -145,7 +151,7 @@
         "access_protected": "Accés Protegit",
         "course_password": "Contrasenya del Curs",
         "password_error": "Contrasenya incorrecta",
-        "access_form": "Accedir al Formulari",
+        "access_form": "Acceder al Formulari",
         "invalid_link": "Enllaç no vàlid o curs no trobat.",
         "dates": "Dates",
         "location": "Ubicació",
@@ -185,7 +191,7 @@
     "session_feedback": {
         "thank_you": "Gràcies!",
         "feedback_submitted": "La teva valoració s'ha enviat correctament. La teva opinió ens ajuda a millorar.",
-        "close_tab": "Ja pots tancar aquesta pestanya.",
+        "close_tab": "Ya pots tancar aquesta pestanya.",
         "title": "Valoració de la Sessió",
         "question": "Com valoraries l'experiència a la classe d'avui?",
         "ratings": {
@@ -197,7 +203,7 @@
         },
         "comment_label": "Comentari (Opcional)",
         "comment_placeholder": "Què t'ha semblat la sessió? Algun suggeriment?",
-        "error_required": "Si us plau, selecciona una puntuació.",
+        "error_required": "Si us plau, selecciona una puntuación.",
         "submit": "Enviar Valoración",
         "sending": "Enviant...",
         "brand": "UGT EnForma"
@@ -222,7 +228,7 @@
         "pdf_button": {
             "generate": "Generar PDF",
             "select_signature": "Selecciona una firma primer",
-            "force": "Forçar generació ({{percentage}}% < {{min}}%)",
+            "force": "Forzar generació ({{percentage}}% < {{min}}%)",
             "force_short": "Forçar PDF",
             "pdf": "PDF",
             "warning_signature": "Si us plau, selecciona una firma primer.",
@@ -246,7 +252,7 @@
             "sent_partial": "{{sent}}/{{total}} enviats ({{errors}} errors)",
             "details": "Detalls",
             "retry": "Reintentar",
-            "load_more": "CARREGAR MÉS REGISTRES"
+            "load_more": "CARGAR MÉS REGISTRES"
         }
     },
     "settings": {
@@ -268,7 +274,7 @@
         "team": {
             "title": "Gestió d'Equip Docent",
             "subtitle": "Afegeix o elimina instructors que poden impartir cursos.",
-            "add_label": "Nom del Docent",
+            "add_label": "Nom del Docente",
             "add_placeholder": "Ex: Maria García",
             "add_button": "Afegir",
             "adding": "Afegint...",
@@ -295,7 +301,13 @@
         "password_label": "Contrasenya",
         "remember_me": "Recorda'm",
         "forgot_password": "Has oblidat la contrasenya?",
-        "submit_button": "INICIAR SESSIÓ"
+        "submit_button": "INICIAR SESSIÓ",
+        "reset_title": "Restablir Contrasenya",
+        "reset_subtitle": "T'enviarem un correu oficial",
+        "reset_email_sent": "S'ha enviat un correu de restabliment",
+        "reset_error": "No s'ha trobat cap usuari amb aquest correu",
+        "send_reset_link": "Enviar Enllaç",
+        "activation_notice": "Si ets un nou usuari, usa \"He oblidat la contrasenya\" per activar el teu compte"
     },
     "calendar": {
         "legend": {
@@ -312,11 +324,47 @@
         "delete_teacher_title": "Eliminar Docent",
         "delete_teacher_desc": "Estàs segur que vols eliminar aquest docent de l'equip?",
         "sync_counts_title": "Sincronitzar Comptes",
-        "sync_counts_desc": "Això recalcularà el nombre d'alumnes de tots els cursos basant-se en les inscripcions reals. Aquest procés pot trigar uns moments.",
+        "sync_counts_desc": "Això recalculará el nombre d'alumnes de tots els cursos basant-se en les inscripcions reals. Aquest procés pot trigar uns moments.",
         "irreversible": "Aquesta acció és irreversible. Totes les dades associades es perdran del sistema.",
         "review_data": "Assegura't de revisar bé les dades abans de continuar amb aquesta operació.",
         "yes_delete": "Sí, eliminar",
         "yes_continue": "Sí, continuar",
         "accept": "D'acord"
+    },
+    "users": {
+        "title": "Gestió d'Usuaris",
+        "subtitle": "Administra l'accés i els rols del personal de formació.",
+        "new_button": "Nou Usuari",
+        "table": {
+            "name": "Nom",
+            "email": "Correu electrònic",
+            "role": "Rol",
+            "status": "Estat",
+            "actions": "Accions"
+        },
+        "roles": {
+            "admin": "Administrador",
+            "teacher": "Docent"
+        },
+        "status": {
+            "active": "Actiu",
+            "inactive": "Inactiu"
+        },
+        "modal": {
+            "create_title": "Crear Nou Usuari",
+            "edit_title": "Editar Usuari",
+            "delete_title": "Eliminar Usuari",
+            "delete_confirm": "Estàs segur que vols eliminar aquest usuari? Perderà l'accés al sistema immediatament.",
+            "fields": {
+                "uid": "UID Firebase (Manual)",
+                "uid_placeholder": "ID tècnic de Firebase (opcional)",
+                "name": "Nom i Cognoms",
+                "email": "Email",
+                "role": "Rol de l'usuari",
+                "uid_required": "Es requereix l'email per a la invitació"
+            },
+            "invite_subject": "Benvingut/da a UGT EnForma - Accés al CRM",
+            "invite_body": "Hola %NAME%,\n\nt'hem donat d'alta a la plataforma UGT EnForma com a %ROLE%.\n\nPer activar el teu compte, fes clic en el següent enllaç i usa l'opció \"He oblidat la contrasenya\" per establir la teva clau personal:\n\n%LINK%\n\nBenvingut/da a l'equip!"
+        }
     }
 }

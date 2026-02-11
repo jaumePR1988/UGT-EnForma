@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import SignatureManager from '../components/certificates/SignatureManager';
 import { generateCertificate, generateMassCertificates } from '../utils/CertificateGenerator';
 import { studentService } from '../services/studentService';
+import { notificationService } from '../services/notificationService';
 import { Modal } from '../components/ui/Modal';
 
 const Certificates = ({ onNavigate, courses = [], students = [] }) => {
@@ -271,6 +272,11 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
                 signatureUsed: signature.signerName || signature.name,
                 generatedBy: 'Admin' // TODO: Get real user
             });
+
+            // Send Certificate Email (Automated via Firestore queue)
+            const certificateUrl = `https://firebasestorage.googleapis.com/v1/b/ugt-enforma-crm-v1.appspot.com/o/certificates%2F${student.id}_${course.id}.pdf?alt=media`;
+            await notificationService.sendCertificateEmail(student, course, certificateUrl);
+
             // Update local state
             setCourseStudents(prev => prev.map(s =>
                 s.id === student.id ? { ...s, certificateGenerated: true } : s
@@ -355,254 +361,243 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
     };
 
     return (
-        <div className="bg-background-light text-slate-900 min-h-screen transition-colors duration-200">
-            <Sidebar currentView="certificates" onNavigate={onNavigate} />
+        <div className="space-y-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800">{t('certificates.title')}</h1>
+                    <p className="text-slate-500 text-sm">{t('certificates.subtitle')}</p>
+                </div>
+            </header>
 
-            <main className="lg:ml-64 p-6 lg:p-10">
-                <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">{t('certificates.title')}</h1>
-                        <p className="text-slate-500 text-sm">{t('certificates.subtitle')}</p>
-                    </div>
-                </header>
+            <div className="space-y-8">
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* LEFT COLUMN: Configuration */}
+                    <div className="lg:col-span-1 space-y-6">
 
-                <div className="space-y-8">
-                    <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* LEFT COLUMN: Configuration */}
-                        <div className="lg:col-span-1 space-y-6">
+                        {/* Course Selector */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                            <h3 className="font-bold text-slate-800 mb-4 flex items-center">
+                                <span className="material-icons-outlined mr-2 text-primary">school</span>
+                                {t('certificates.select_course')}
+                            </h3>
+                            <select
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/50 mb-3"
+                                value={selectedCourseId}
+                                onChange={(e) => setSelectedCourseId(e.target.value)}
+                            >
+                                <option value="">{t('certificates.select_course_placeholder')}</option>
+                                {availableCourses.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name} {c.status === 'Finalitzat' ? '(Arxivat)' : ''}
+                                    </option>
+                                ))}
+                            </select>
 
-                            {/* Course Selector */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                                <h3 className="font-bold text-slate-800 mb-4 flex items-center">
-                                    <span className="material-icons-outlined mr-2 text-primary">school</span>
-                                    {t('certificates.select_course')}
-                                </h3>
-                                <select
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/50 mb-3"
-                                    value={selectedCourseId}
-                                    onChange={(e) => setSelectedCourseId(e.target.value)}
-                                >
-                                    <option value="">{t('certificates.select_course_placeholder')}</option>
-                                    {availableCourses.map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name} {c.status === 'Finalitzat' ? '(Arxivat)' : ''}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <div className="flex items-center mb-1">
-                                    <input
-                                        type="checkbox"
-                                        id="showArchived"
-                                        checked={showArchived}
-                                        onChange={(e) => setShowArchived(e.target.checked)}
-                                        className="rounded border-slate-300 text-primary focus:ring-primary mr-2"
-                                    />
-                                    <label htmlFor="showArchived" className="text-xs text-slate-600 cursor-pointer select-none">
-                                        Veure cursos arxivats
-                                    </label>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-2">
-                                    {t('certificates.select_course_help')}
-                                </p>
+                            <div className="flex items-center mb-1">
+                                <input
+                                    type="checkbox"
+                                    id="showArchived"
+                                    checked={showArchived}
+                                    onChange={(e) => setShowArchived(e.target.checked)}
+                                    className="rounded border-slate-300 text-primary focus:ring-primary mr-2"
+                                />
+                                <label htmlFor="showArchived" className="text-xs text-slate-600 cursor-pointer select-none">
+                                    Veure cursos arxivats
+                                </label>
                             </div>
-
-                            {/* Signature Manager */}
-                            <SignatureManager onSelectSignature={setSelectedSignature} />
+                            <p className="text-xs text-slate-500 mt-2">
+                                {t('certificates.select_course_help')}
+                            </p>
                         </div>
 
-                        {/* RIGHT COLUMN: Student List */}
-                        <div className="lg:col-span-2">
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-                                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                                    <h3 className="font-bold text-slate-800 flex items-center">
-                                        <span className="material-icons-outlined mr-2 text-primary">people</span>
-                                        {t('certificates.student_list')}
-                                    </h3>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">
-                                            {t('certificates.students_count', { count: courseStudents.length })}
-                                        </span>
-                                        {selectedStudents.length > 0 && (
-                                            <button
-                                                onClick={handleGenerateSelected}
-                                                className="bg-primary hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm"
-                                            >
-                                                <span className="material-icons-outlined text-sm mr-1">file_download</span>
-                                                Generar ({selectedStudents.length})
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                        {/* Signature Manager */}
+                        <SignatureManager onSelectSignature={setSelectedSignature} />
+                    </div>
 
-                                {loading ? (
-                                    <div className="p-10 text-center text-slate-500">
-                                        <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
-                                        <p>{t('common.loading')}</p>
-                                    </div>
-                                ) : !selectedCourseId ? (
-                                    <div className="p-10 text-center text-slate-400">
-                                        <span className="material-icons-outlined text-4xl mb-2">arrow_back</span>
-                                        <p>{t('certificates.select_course_start')}</p>
-                                    </div>
-                                ) : courseStudents.length === 0 ? (
-                                    <div className="p-10 text-center text-slate-500">
-                                        <p>{t('certificates.no_students')}</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left">
-                                            <thead>
-                                                <tr className="bg-slate-50 text-xs text-slate-500 uppercase">
-                                                    <th className="px-6 py-3 w-10">
+                    {/* RIGHT COLUMN: Student List */}
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-800 flex items-center">
+                                    <span className="material-icons-outlined mr-2 text-primary">people</span>
+                                    {t('certificates.student_list')}
+                                </h3>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">
+                                        {t('certificates.students_count', { count: courseStudents.length })}
+                                    </span>
+                                    {selectedStudents.length > 0 && (
+                                        <button
+                                            onClick={handleGenerateSelected}
+                                            className="bg-primary hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm"
+                                        >
+                                            <span className="material-icons-outlined text-sm mr-1">file_download</span>
+                                            Generar ({selectedStudents.length})
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {loading ? (
+                                <div className="p-10 text-center text-slate-500">
+                                    <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
+                                    <p>{t('common.loading')}</p>
+                                </div>
+                            ) : !selectedCourseId ? (
+                                <div className="p-10 text-center text-slate-400">
+                                    <span className="material-icons-outlined text-4xl mb-2">arrow_back</span>
+                                    <p>{t('certificates.select_course_start')}</p>
+                                </div>
+                            ) : courseStudents.length === 0 ? (
+                                <div className="p-10 text-center text-slate-500">
+                                    <p>{t('certificates.no_students')}</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="bg-slate-50 text-xs text-slate-500 uppercase">
+                                                <th className="px-6 py-3 w-10">
+                                                    <input
+                                                        type="checkbox"
+                                                        onChange={handleSelectAll}
+                                                        checked={courseStudents.length > 0 && selectedStudents.length === courseStudents.length}
+                                                        className="rounded border-slate-300 text-primary focus:ring-primary"
+                                                    />
+                                                </th>
+                                                <th className="px-6 py-3">{t('certificates.table.student')}</th>
+                                                <th className="px-6 py-3">{t('certificates.table.dni')}</th>
+                                                <th className="px-6 py-3">{t('certificates.table.attendance')}</th>
+                                                <th className="px-6 py-3 text-right">{t('certificates.table.actions')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {courseStudents.map(student => (
+                                                <tr key={student.id} className="hover:bg-slate-50">
+                                                    <td className="px-6 py-4">
                                                         <input
                                                             type="checkbox"
-                                                            onChange={handleSelectAll}
-                                                            checked={courseStudents.length > 0 && selectedStudents.length === courseStudents.length}
+                                                            checked={selectedStudents.includes(student.id)}
+                                                            onChange={() => handleSelectStudent(student.id)}
                                                             className="rounded border-slate-300 text-primary focus:ring-primary"
                                                         />
-                                                    </th>
-                                                    <th className="px-6 py-3">{t('certificates.table.student')}</th>
-                                                    <th className="px-6 py-3">{t('certificates.table.dni')}</th>
-                                                    <th className="px-6 py-3">{t('certificates.table.attendance')}</th>
-                                                    <th className="px-6 py-3 text-right">{t('certificates.table.actions')}</th>
+                                                    </td>
+                                                    <td className="px-6 py-4 font-medium text-slate-700">
+                                                        {student.fullName}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-500 font-mono">
+                                                        {student.dni}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {(() => {
+                                                            const stats = calculateAttendance(student, selectedCourseId);
+                                                            return (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${stats.eligible
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : 'bg-red-100 text-red-700'
+                                                                        }`}>
+                                                                        {stats.percentage}%
+                                                                    </span>
+                                                                    {!stats.eligible && (
+                                                                        <span className="text-[10px] text-slate-400">
+                                                                            ({t('certificates.min_attendance', { min: stats.minPercentage })})
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {(() => {
+                                                            const stats = calculateAttendance(student, selectedCourseId);
+                                                            // Only disable if no signature. Allow override for attendance.
+                                                            const isDisabled = !selectedSignature;
+                                                            const isForce = !stats.eligible;
+
+                                                            let title = t('certificates.pdf_button.generate');
+                                                            if (!selectedSignature) title = t('certificates.pdf_button.select_signature');
+                                                            else if (isForce) title = t('certificates.pdf_button.force', { percentage: stats.percentage, min: stats.minPercentage });
+
+                                                            return (
+                                                                <button
+                                                                    onClick={() => handleGeneratePDF(student)}
+                                                                    className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${isDisabled
+                                                                        ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                                                        : isForce
+                                                                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
+                                                                            : 'bg-primary text-white hover:bg-red-700 shadow-sm'
+                                                                        }`}
+                                                                    disabled={isDisabled}
+                                                                    title={title}
+                                                                >
+                                                                    <span className="material-icons-outlined text-sm mr-1">
+                                                                        {isForce ? 'warning' : 'download'}
+                                                                    </span>
+                                                                    {isForce ? t('certificates.pdf_button.force_short') : t('certificates.pdf_button.pdf')}
+                                                                </button>
+                                                            );
+                                                        })()}
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {courseStudents.map(student => (
-                                                    <tr key={student.id} className="hover:bg-slate-50">
-                                                        <td className="px-6 py-4">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedStudents.includes(student.id)}
-                                                                onChange={() => handleSelectStudent(student.id)}
-                                                                className="rounded border-slate-300 text-primary focus:ring-primary"
-                                                            />
-                                                        </td>
-                                                        <td className="px-6 py-4 font-medium text-slate-700">
-                                                            {student.fullName}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-sm text-slate-500 font-mono">
-                                                            {student.dni}
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            {(() => {
-                                                                const stats = calculateAttendance(student, selectedCourseId);
-                                                                return (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className={`px-2 py-1 rounded-md text-xs font-bold ${stats.eligible
-                                                                            ? 'bg-green-100 text-green-700'
-                                                                            : 'bg-red-100 text-red-700'
-                                                                            }`}>
-                                                                            {stats.percentage}%
-                                                                        </span>
-                                                                        {!stats.eligible && (
-                                                                            <span className="text-[10px] text-slate-400">
-                                                                                ({t('certificates.min_attendance', { min: stats.minPercentage })})
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            {(() => {
-                                                                const stats = calculateAttendance(student, selectedCourseId);
-                                                                // Only disable if no signature. Allow override for attendance.
-                                                                const isDisabled = !selectedSignature;
-                                                                const isForce = !stats.eligible;
-
-                                                                let title = t('certificates.pdf_button.generate');
-                                                                if (!selectedSignature) title = t('certificates.pdf_button.select_signature');
-                                                                else if (isForce) title = t('certificates.pdf_button.force', { percentage: stats.percentage, min: stats.minPercentage });
-
-                                                                return (
-                                                                    <button
-                                                                        onClick={() => handleGeneratePDF(student)}
-                                                                        className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${isDisabled
-                                                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                                                                            : isForce
-                                                                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
-                                                                                : 'bg-primary text-white hover:bg-red-700 shadow-sm'
-                                                                            }`}
-                                                                        disabled={isDisabled}
-                                                                        title={title}
-                                                                    >
-                                                                        <span className="material-icons-outlined text-sm mr-1">
-                                                                            {isForce ? 'warning' : 'download'}
-                                                                        </span>
-                                                                        {isForce ? t('certificates.pdf_button.force_short') : t('certificates.pdf_button.pdf')}
-                                                                    </button>
-                                                                );
-                                                            })()}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </section>
-
-                    <section>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold flex items-center text-slate-800">
-                                <span className="material-icons-outlined mr-2 text-slate-400">history</span>
-                                {t('certificates.history.title')}
-                            </h2>
-                            <div className="relative">
-                                <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">filter_list</span>
-                                <input className="pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none w-48 transition-all" placeholder={t('certificates.history.filter')} type="text" />
-                            </div>
-                        </div>
-                        <div className="bg-card-light rounded-xl border border-slate-200 shadow-sm">
-                            <div className="divide-y divide-slate-100">
-                                {certificateLogs && certificateLogs.length > 0 ? certificateLogs.map(log => (
-                                    <div key={log.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="p-2 bg-green-50 text-green-600 rounded-full">
-                                                <span className="material-icons-outlined text-xl leading-none">task_alt</span>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-800">{log.courseName}</p>
-                                                <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
-                                                    <span className="material-icons-outlined text-[12px] mr-1">person</span> {log.studentName}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-medium text-slate-600">
-                                                {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() : 'Avui'}
-                                            </p>
-                                            <p className="text-[10px] text-slate-400">{log.signatureUsed}</p>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="p-8 text-center text-slate-400 text-sm">
-                                        No hi ha registres recents.
-                                    </div>
-                                )}
-                            </div>
-                            {certificateLogs.length >= 50 && (
-                                <div className="p-3 bg-slate-50 text-center border-t border-slate-200">
-                                    <button className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center justify-center w-full">
-                                        {t('certificates.history.load_more')} <span className="material-icons-outlined text-xs ml-1">expand_more</span>
-                                    </button>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </div>
-                    </section>
-                </div>
-
-                <footer className="mt-8 p-6 border-t border-slate-200 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                        <img alt="UGT Catalunya Logo" className="h-8 opacity-50 grayscale" src="/logo-ugt.png" />
-                        <p className="text-xs text-slate-400">© 2026 UGT de Catalunya - Àrea de Formació i Educació Sindical</p>
                     </div>
-                </footer>
-            </main>
+                </section>
+
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold flex items-center text-slate-800">
+                            <span className="material-icons-outlined mr-2 text-slate-400">history</span>
+                            {t('certificates.history.title')}
+                        </h2>
+                        <div className="relative">
+                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">filter_list</span>
+                            <input className="pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none w-48 transition-all" placeholder={t('certificates.history.filter')} type="text" />
+                        </div>
+                    </div>
+                    <div className="bg-card-light rounded-xl border border-slate-200 shadow-sm">
+                        <div className="divide-y divide-slate-100">
+                            {certificateLogs && certificateLogs.length > 0 ? certificateLogs.map(log => (
+                                <div key={log.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-2 bg-green-50 text-green-600 rounded-full">
+                                            <span className="material-icons-outlined text-xl leading-none">task_alt</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800">{log.courseName}</p>
+                                            <p className="text-[11px] text-slate-500 uppercase tracking-tighter flex items-center">
+                                                <span className="material-icons-outlined text-[12px] mr-1">person</span> {log.studentName}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-medium text-slate-600">
+                                            {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() : 'Avui'}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400">{log.signatureUsed}</p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="p-8 text-center text-slate-400 text-sm">
+                                    No hi ha registres recents.
+                                </div>
+                            )}
+                        </div>
+                        {certificateLogs.length >= 50 && (
+                            <div className="p-3 bg-slate-50 text-center border-t border-slate-200">
+                                <button className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center justify-center w-full">
+                                    {t('certificates.history.load_more')} <span className="material-icons-outlined text-xs ml-1">expand_more</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </div>
 
             <ConfirmDialog
                 isOpen={confirmConfig.isOpen}

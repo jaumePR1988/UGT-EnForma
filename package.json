@@ -1,7 +1,12 @@
 {
   "name": "ugt-crm",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "homepage": "https://ugt-enforma-crm-v1.firebaseapp.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jaumePR1988/UGT-EnForma.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

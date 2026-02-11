@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Link2, Lock, Unlock, Copy, Check, ExternalLink, ShieldAlert, Globe, Shield } from 'lucide-react';
 import { courseService } from '../../services/courseService';
+import { getBaseUrl } from '../../utils/url';
 
 export const CourseLinkConfig = ({ isOpen, onClose, course }) => {
     const [config, setConfig] = useState({
@@ -23,7 +24,7 @@ export const CourseLinkConfig = ({ isOpen, onClose, course }) => {
         }
     }, [course]);
 
-    const publicUrl = `${window.location.origin}/public/register/${course?.id}`;
+    const publicUrl = `${getBaseUrl()}/public/register/${course?.id}`;
 
     const handleSave = async (newConfig) => {
         setSaving(true);

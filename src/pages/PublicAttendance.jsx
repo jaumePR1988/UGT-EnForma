@@ -100,17 +100,24 @@ const PublicAttendance = () => {
             }
 
             // 4. Mark Attendance
-            await studentService.markSessionAttendance(student.id, sessionId);
+            // CHECK if student already has this session
+            const alreadyRegistered = student.attendanceSessions?.includes(sessionId);
 
-            setStatus('success');
+            if (!alreadyRegistered) {
+                await studentService.markSessionAttendance(student.id, sessionId);
+                setStatus('success');
 
-            // Celebration!
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
-            });
+                // Celebration!
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
+                });
+            } else {
+                // Just show success but without another increment or confetti
+                setStatus('already-checked-in');
+            }
 
         } catch (error) {
             console.error("Attendance error:", error);
@@ -131,17 +138,27 @@ const PublicAttendance = () => {
         </div>
     );
 
-    if (status === 'success') {
+    if (status === 'success' || status === 'already-checked-in') {
+        const isRepeat = status === 'already-checked-in';
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
-                <div className="absolute inset-0 bg-green-50 z-0"></div>
+                <div className={`absolute inset-0 ${isRepeat ? 'bg-blue-50' : 'bg-green-50'} z-0`}></div>
                 <Card className="max-w-md w-full bg-white shadow-xl border-none relative z-10 p-8 text-center">
-                    <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce-slow">
-                        <CheckCircle size={40} className="text-green-600" />
+                    <div className={`mx-auto w-20 h-20 ${isRepeat ? 'bg-blue-100' : 'bg-green-100'} rounded-full flex items-center justify-center mb-6 animate-bounce-slow`}>
+                        {isRepeat ? (
+                            <ShieldCheck size={40} className="text-blue-600" />
+                        ) : (
+                            <CheckCircle size={40} className="text-green-600" />
+                        )}
                     </div>
-                    <h2 className="text-2xl font-black text-slate-800 mb-2">Assistència Confirmada</h2>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">
+                        {isRepeat ? 'Ja registrat' : 'Assistència Confirmada'}
+                    </h2>
                     <p className="text-slate-600 mb-6 text-sm">
-                        Hem registrat la teva presència a la sessió d'avui correctament.
+                        {isRepeat
+                            ? "Ja hem registrat la teva presència per a aquesta sessió anteriorment. Gràcies!"
+                            : "Hem registrat la teva presència a la sessió d'avui correctament."
+                        }
                     </p>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-left mb-6">
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Curs</p>

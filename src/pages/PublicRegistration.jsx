@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { courseService } from '../services/courseService';
 import { studentService } from '../services/studentService';
+import { notificationService } from '../services/notificationService';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -37,6 +38,36 @@ const PublicRegistration = () => {
     const [passwordError, setPasswordError] = useState(false);
     const [isPasswordVerified, setIsPasswordVerified] = useState(false);
     const [registeredStudentId, setRegisteredStudentId] = useState(null);
+    const [dniError, setDniError] = useState("");
+
+    const validateDNI = (dni) => {
+        const value = dni.trim().toUpperCase();
+        if (!value) return false;
+
+        // Regular expression for DNI (8 numbers + 1 letter) or NIE (X/Y/Z + 7 numbers + 1 letter)
+        const dniRegex = /^[0-9]{8}[A-Z]$/;
+        const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
+
+        if (!dniRegex.test(value) && !nieRegex.test(value)) {
+            return false;
+        }
+
+        // Logic to validate the control letter
+        const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
+        let number;
+
+        if (dniRegex.test(value)) {
+            number = parseInt(value.substring(0, 8), 10);
+        } else {
+            // NIE: Replace X with 0, Y with 1, Z with 2
+            const prefix = value.charAt(0);
+            const prefixVal = prefix === 'X' ? '0' : prefix === 'Y' ? '1' : '2';
+            number = parseInt(prefixVal + value.substring(1, 8), 10);
+        }
+
+        const expectedLetter = letters[number % 23];
+        return value.charAt(8) === expectedLetter;
+    };
 
 
     useEffect(() => {
@@ -72,9 +103,17 @@ const PublicRegistration = () => {
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        setRegistrationStatus('submitting');
+        setDniError("");
 
         const formData = new FormData(e.target);
+        const dni = formData.get('dni');
+
+        if (!validateDNI(dni)) {
+            setDniError(t('public_registration.dni_invalid', 'DNI o NIE no és vàlid. Revisa la lletra.'));
+            return;
+        }
+
+        setRegistrationStatus('submitting');
 
         // Logic: If spots are available -> 'Inscrit' (Confirmed)
         // If full and waitlist enabled -> 'registered' (Waitlist/Solicitant)
@@ -115,6 +154,13 @@ const PublicRegistration = () => {
             const result = await studentService.registerStudent(studentData);
             setRegisteredStudentId(result.id);
             setRegistrationStatus('success');
+
+            // Send Welcome Email (Simulated)
+            try {
+                await notificationService.sendWelcomeEmail(studentData, course);
+            } catch (emailErr) {
+                console.warn("Could not send simulation email:", emailErr);
+            }
         } catch (error) {
             console.error("Registration error", error);
             setRegistrationStatus('error');
@@ -246,6 +292,29 @@ const PublicRegistration = () => {
     }
 
     if (!course) return <div className="min-h-screen flex items-center justify-center p-20 text-center text-slate-400 font-bold uppercase tracking-widest">{t('public_registration.invalid_link')}</div>;
+
+    if (course.status === 'Esborrany') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+                <Card className="max-w-md w-full p-8 text-center animate-slide-up">
+                    <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 text-orange-500">
+                        <Info size={32} />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 mb-4">{t('public_registration.not_available_title', 'Curs no disponible')}</h2>
+                    <p className="text-slate-600 mb-8">
+                        {t('public_registration.draft_message', 'Aquest curs encara es troba en fase de preparació i no admet inscripcions públiques.')}
+                    </p>
+                    <Button
+                        fullWidth
+                        onClick={() => window.location.href = 'https://ugt.cat'}
+                        className="bg-slate-900 text-white"
+                    >
+                        {t('public_registration.back_to_web', 'Tornar a la web d\'UGT')}
+                    </Button>
+                </Card>
+            </div>
+        );
+    }
 
     // Determine location display
     const locationDisplay = course.sessions && course.sessions.length > 0 && course.sessions[0].location
@@ -452,7 +521,14 @@ const PublicRegistration = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.dni')} *</label>
-                                        <input required name="dni" type="text" placeholder="00000000X" className="w-full bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium" />
+                                        <input
+                                            required
+                                            name="dni"
+                                            type="text"
+                                            placeholder="00000000X"
+                                            className={`w-full bg-slate-50 border ${dniError ? 'border-red-300 ring-2 ring-red-500/10' : 'border-slate-200'} rounded-xl focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 px-4 py-3 outline-none transition-all placeholder:text-slate-300 font-medium`}
+                                        />
+                                        {dniError && <p className="text-[10px] text-red-500 font-bold ml-1">{dniError}</p>}
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t('public_registration.form.phone')} *</label>

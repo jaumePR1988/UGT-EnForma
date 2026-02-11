@@ -1,18 +1,60 @@
-rules_version='2'
-
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Auth logic for CRM users (Admins/Teachers)
+    function isCrmUser() {
+      return request.auth != null && (
+        request.auth.token.email == 'jaume@ugt.cat' || 
+        request.auth.token.email == 'admin@ugt.cat' || 
+        request.auth.token.email == 'formacion@ugt.cat' || 
+        request.auth.token.email == 'formación@ugt.cat' || 
+        request.auth.token.email == 'formacio@ugt.cat'
+      );
+    }
+
+    function isAdmin() {
+      return isCrmUser();
+    }
+
+    // --- Courses ---
+    match /courses/{courseId} {
+      allow get, list: if true; 
+      allow write: if isAdmin();
+    }
+
+    // --- Students ---
+    match /students/{studentId} {
+      allow create: if true;
+      allow get: if true; 
+      allow list: if true; 
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['attended', 'lastAttended', 'attendanceSessions'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Instructors ---
+    match /instructors/{instructorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Signatures ---
+    match /signatures/{signatureId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Feedback ---
+    match /feedbacks/{feedbackId} {
+      allow create: if true;
+      allow read: if isAdmin();
+    }
+
     match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 3, 6);
+      allow read, write: if isAdmin();
     }
   }
 }
