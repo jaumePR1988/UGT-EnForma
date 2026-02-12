@@ -361,5 +361,17 @@
             "invite_subject": "Bienvenido/a a UGT EnForma - Acceso al CRM",
             "invite_body": "Hola %NAME%,\n\nTe hemos dado de alta en la plataforma UGT EnForma como %ROLE%.\n\nPara activar tu cuenta, haz clic en el siguiente enlace y usa la opción \"¿Has olvidado la contraseña?\" para establecer tu clave personal:\n\n%LINK%\n\n¡Bienvenido/a al equipo!"
         }
+    },
+    "portal": {
+        "no_enrollments": "No se han encontrado inscripciones para estos datos. Revisa que el DNI y el Email sean correctos.",
+        "error": "Ha ocurrido un error al buscar tus datos. Por favor, inténtalo de nuevo más tarde.",
+        "welcome": "Consulta tu historial y descarga diplomas oficiales.",
+        "back_link": "Salir",
+        "my_courses": "Mis cursos"
+    },
+    "header": {
+        "user_account": "Cuenta de usuario",
+        "profile": "Mi Perfil",
+        "logout": "Cerrar Sesión"
     }
 }

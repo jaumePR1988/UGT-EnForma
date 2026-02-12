@@ -205,22 +205,22 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
 
         const stats = calculateAttendance(student, selectedCourseId);
 
-        const proceed = async () => {
-            generateCertificate(student, courseWithHours, signatureToUse);
-            await logGeneration(student, courseWithHours, signatureToUse);
+        const proceed = async (isOverride = false) => {
+            const doc = generateCertificate(student, courseWithHours, signatureToUse);
+            await logGeneration(student, courseWithHours, signatureToUse, doc, isOverride);
         };
 
         if (!stats.eligible) {
             showModal({
-                title: t('certificates.modal.low_attendance_title') || 'Assistència Insuficient',
-                message: t('certificates.pdf_button.warning_attendance', { percentage: stats.percentage, min: stats.minPercentage }),
+                title: 'Assistència Insuficient',
+                message: `L'alumne té un ${stats.percentage}% d'assistència (Mínim: ${stats.min}%). Si generes el certificat ara, quedarà desbloquejat al seu Portal de l'Alumne de forma permanent. Vols continuar?`,
                 type: 'warning',
-                onConfirm: proceed,
+                onConfirm: () => proceed(true),
                 confirmText: t('certificates.modal.force_generate') || 'Generar igualment',
                 cancelText: t('common.cancel')
             });
         } else {
-            await proceed();
+            await proceed(false);
         }
     };
 
@@ -238,15 +238,22 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
         const lowAttendanceStudents = studentsToGenerate.filter(s => !calculateAttendance(s, selectedCourseId).eligible);
 
         const proceed = async () => {
-            // Generate ONE PDF with multiple pages
+            // 1. Generate the MASSIVE PDF for the Admin to download
             generateMassCertificates(studentsToGenerate, courseWithHours, signatureToUse);
 
-            // Log for all
-            for (const s of studentsToGenerate) {
-                await logGeneration(s, courseWithHours, signatureToUse);
+            // 2. Generate and upload INDIVIDUAL PDFs for each student's portal
+            // We do this in parallel to be efficient
+            setLoading(true);
+            try {
+                const uploadPromises = studentsToGenerate.map(async (s) => {
+                    const stats = calculateAttendance(s, selectedCourseId);
+                    await logGeneration(s, courseWithHours, signatureToUse, null, !stats.eligible);
+                });
+                await Promise.all(uploadPromises);
+            } finally {
+                setLoading(false);
+                setSelectedStudents([]);
             }
-            // Clear selection
-            setSelectedStudents([]);
         };
 
         if (lowAttendanceStudents.length > 0) {
@@ -263,27 +270,48 @@ const Certificates = ({ onNavigate, courses = [], students = [] }) => {
         }
     };
 
-    const logGeneration = async (student, course, signature) => {
+    const logGeneration = async (student, course, signature, doc = null, isOverride = false) => {
         try {
-            await studentService.setCertificateGenerated(student.id);
+            setLoading(true);
+
+            // 1. Silent generation if doc is missing
+            let pdfDoc = doc;
+            if (!pdfDoc) {
+                pdfDoc = generateCertificate(student, course, signature, false);
+            }
+
+            // 2. Upload to Cloud Storage
+            const pdfBlob = pdfDoc.output('blob');
+            const downloadUrl = await studentService.uploadCertificate(student.id, course.id, pdfBlob);
+
+            // 3. Mark as override if applicable
+            if (isOverride) {
+                await studentService.updateStudent(student.id, { attendanceOverride: true });
+            }
+
+            // 4. Standard logging
             await studentService.logCertificate({
                 studentName: student.fullName,
                 courseName: course.name || course.title,
                 signatureUsed: signature.signerName || signature.name,
-                generatedBy: 'Admin' // TODO: Get real user
+                generatedBy: 'Admin',
+                isOverride: isOverride
             });
 
-            // Send Certificate Email (Automated via Firestore queue)
-            const certificateUrl = `https://firebasestorage.googleapis.com/v1/b/ugt-enforma-crm-v1.appspot.com/o/certificates%2F${student.id}_${course.id}.pdf?alt=media`;
-            await notificationService.sendCertificateEmail(student, course, certificateUrl);
+            // 4. Automated email notification via Firestore queue
+            // Now we can use the REAL storage URL from downloadUrl
+            await notificationService.sendCertificateEmail(student, course, downloadUrl);
 
             // Update local state
             setCourseStudents(prev => prev.map(s =>
-                s.id === student.id ? { ...s, certificateGenerated: true } : s
+                s.id === student.id ? { ...s, certificateGenerated: true, certificateUrl: downloadUrl } : s
             ));
             loadLogs(); // Refresh logs
         } catch (e) {
-            console.error("Failed to log generation", e);
+            console.error("Failed to log and upload generation", e);
+            showNotification(t('common.error'), 'error');
+        } finally {
+            setLoading(false);
         }
     };
 

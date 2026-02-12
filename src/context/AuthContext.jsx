@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                const userEmail = firebaseUser.email?.toLowerCase();
                 setUser(firebaseUser);
 
                 // Determine Role from Firestore
@@ -30,14 +31,14 @@ export const AuthProvider = ({ children }) => {
 
                     // If no user by UID, look for an invitation by Email
                     if (!userData) {
-                        const invitation = await userService.getUserByEmail(firebaseUser.email);
+                        const invitation = await userService.getUserByEmail(userEmail);
                         if (invitation && invitation.isInvitation) {
                             // "Claim" the invitation: Save as real user with the new UID
                             const { id, isInvitation, ...invitationData } = invitation;
                             await userService.saveUser(firebaseUser.uid, {
                                 ...invitationData,
-                                email: firebaseUser.email,
-                                name: invitationData.name || firebaseUser.displayName || firebaseUser.email.split('@')[0]
+                                email: userEmail,
+                                name: invitationData.name || firebaseUser.displayName || userEmail.split('@')[0]
                             });
 
                             // Delete the invitation record
@@ -45,28 +46,39 @@ export const AuthProvider = ({ children }) => {
 
                             // Load the newly created user data
                             userData = await userService.getUserById(firebaseUser.uid);
-                            console.log("Invitation claimed successfully for:", firebaseUser.email);
+                            console.log("Invitation claimed successfully for:", userEmail);
                         }
                     }
 
-                    if (userData && userData.active !== false) {
-                        setRole(userData.role);
-                    } else if (ADMIN_EMAILS.includes(firebaseUser.email)) {
-                        // Fallback for bootstrap admins during migration
+                    // Priority 1: Master Admin check (hardcoded fallback)
+                    if (ADMIN_EMAILS.includes(userEmail)) {
                         setRole('admin');
-                        // Auto-save this user to Firestore if they are a bootstrap admin
-                        await userService.saveUser(firebaseUser.uid, {
-                            email: firebaseUser.email,
-                            role: 'admin',
-                            active: true,
-                            name: firebaseUser.displayName || firebaseUser.email.split('@')[0]
-                        });
-                    } else {
+                        // Ensure sync with Firestore
+                        if (!userData || userData.role !== 'admin' || !userData.active) {
+                            await userService.saveUser(firebaseUser.uid, {
+                                email: userEmail,
+                                role: 'admin',
+                                active: true,
+                                name: userData?.name || firebaseUser.displayName || userEmail.split('@')[0]
+                            });
+                        }
+                    }
+                    // Priority 2: Generic User Data
+                    else if (userData && userData.active !== false) {
+                        setRole(userData.role || 'teacher');
+                    }
+                    else {
+                        console.warn("User logged in but no role found or inactive:", userEmail);
                         setRole(null);
                     }
                 } catch (err) {
                     console.error("Error fetching role / claiming invitation:", err);
-                    setRole(null);
+                    // Last resort fallback for admins on error
+                    if (ADMIN_EMAILS.includes(userEmail)) {
+                        setRole('admin');
+                    } else {
+                        setRole(null);
+                    }
                 }
             } else {
                 setUser(null);

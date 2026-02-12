@@ -21,6 +21,7 @@ import PublicRegistration from './pages/PublicRegistration';
 import PublicAttendance from './pages/PublicAttendance';
 import SessionFeedback from './pages/public/SessionFeedback';
 import CourseFeedback from './pages/public/CourseFeedback';
+import StudentPortal from './pages/public/StudentPortal';
 import { useNotifications } from './context/NotificationContext';
 import { useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -303,6 +304,8 @@ function App() {
       <Route path="/public/attendance/:courseId" element={<PublicAttendance />} />
       <Route path="/public/feedback/session/:sessionId" element={<SessionFeedback />} />
       <Route path="/public/feedback/course/:courseId" element={<CourseFeedback />} />
+      <Route path="/portal" element={<StudentPortal />} />
+      <Route path="/alumnes" element={<StudentPortal />} />
     </Routes>
   );
 }

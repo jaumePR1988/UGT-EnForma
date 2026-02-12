@@ -114,7 +114,7 @@ const drawCertificatePage = (doc, student, course, signature, width, height) => 
     }
 };
 
-export const generateCertificate = (student, course, signature) => {
+export const generateCertificate = (student, course, signature, shouldSave = true) => {
     // Create landscape A4 PDF
     const doc = new jsPDF({
         orientation: 'landscape',
@@ -128,10 +128,11 @@ export const generateCertificate = (student, course, signature) => {
     drawCertificatePage(doc, student, course, signature, width, height);
 
     const fileName = `Certificat_${(student.fullName || 'alumne').replace(/\s+/g, '_')}.pdf`;
-    doc.save(fileName);
+    if (shouldSave) doc.save(fileName);
+    return doc; // Return doc to allow further processing (like uploading)
 };
 
-export const generateMassCertificates = (students, course, signature) => {
+export const generateMassCertificates = (students, course, signature, shouldSave = true) => {
     // Create landscape A4 PDF for MASS generation
     const doc = new jsPDF({
         orientation: 'landscape',
@@ -150,5 +151,6 @@ export const generateMassCertificates = (students, course, signature) => {
     });
 
     const fileName = `Certificats_Massius_${(course.name || 'curs').replace(/\s+/g, '_')}.pdf`;
-    doc.save(fileName);
+    if (shouldSave) doc.save(fileName);
+    return doc; // Return doc for further processing
 };

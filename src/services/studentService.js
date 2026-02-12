@@ -1,4 +1,5 @@
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
     collection,
     addDoc,
@@ -361,6 +362,61 @@ export const studentService = {
         } catch (error) {
             console.error("Migration error:", error);
             throw error;
+        }
+    },
+
+    /**
+     * PORTAL: Get all enrollments for a student by identity (DNI + Email)
+     */
+    async getStudentEnrollments(dni, email) {
+        try {
+            const normalizedDni = dni.trim().toUpperCase();
+            const normalizedEmail = email.trim().toLowerCase();
+
+            // We search for the identity across all enrollments
+            const q = query(
+                collection(db, COLLECTION_NAME),
+                where("dni", "==", normalizedDni),
+                where("email", "==", normalizedEmail)
+            );
+
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(docSnap => ({
+                id: docSnap.id,
+                ...docSnap.data()
+            }));
+        } catch (error) {
+            console.error("Error getting student enrollments:", error);
+            throw new Error("No s'han pogut verificar les teves dades.");
+        }
+    },
+
+    /**
+     * STORAGE: Upload certificate PDF and update Firestore record
+     */
+    async uploadCertificate(studentId, courseId, pdfBlob) {
+        try {
+            const storagePath = `certificates/${studentId}_${courseId}.pdf`;
+            const storageRef = ref(storage, storagePath);
+
+            // Upload
+            await uploadBytes(storageRef, pdfBlob);
+
+            // Get public URL
+            const downloadUrl = await getDownloadURL(storageRef);
+
+            // Update Firestore
+            const studentRef = doc(db, COLLECTION_NAME, studentId);
+            await updateDoc(studentRef, {
+                certificateUrl: downloadUrl,
+                certificateGenerated: true,
+                certificateGeneratedAt: serverTimestamp()
+            });
+
+            return downloadUrl;
+        } catch (error) {
+            console.error("Error uploading certificate:", error);
+            throw new Error("Error en desar el certificat al núvol.");
         }
     }
 };
